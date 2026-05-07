@@ -75,7 +75,7 @@ export function TodayPage() {
       (event) => localDateKeyFromIso(event.startTime) === todayKey,
     )
 
-    const mappedEvents = todaysEvents.map((event) => ({
+    const mappedEvents: TimelineActivity[] = todaysEvents.map((event) => ({
       id: `meeting-${event.id}-${event.startTime}`,
       type: calendarTypeForEvent(event.calendarId),
       title: event.title,
@@ -87,21 +87,12 @@ export function TodayPage() {
     return dedupeActivities(mappedEvents)
   }, [enrichedCalendarEvents, todayKey])
 
-  const todayManualActivities = useMemo(
-    () =>
-      manualActivities.filter((activity) => {
-        if (!activity.date) return true
-        return activity.date === todayKey
-      }),
-    [manualActivities, todayKey],
-  )
-
   const activities = useMemo(
     () =>
-      [...meetingActivities, ...todayManualActivities].sort((a, b) =>
+      [...meetingActivities, ...manualActivities].sort((a, b) =>
         a.start.localeCompare(b.start),
       ),
-    [meetingActivities, todayManualActivities],
+    [meetingActivities, manualActivities],
   )
 
   return (
