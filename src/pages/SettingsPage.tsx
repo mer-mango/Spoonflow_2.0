@@ -1,197 +1,551 @@
-import { useEffect, useMemo, useState } from 'react'
-import type { ReactNode } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-type Section = 'integrations' | 'profile' | 'notifications' | 'jamie' | 'data'
-type IntegrationState = 'connected' | 'available' | 'needsBackend'
+type SettingsSection =
+  | 'profile'
+  | 'integrations'
+  | 'notifications'
+  | 'jamie'
+  | 'data'
 
 type FathomMeeting = {
-  id: string
-  title: string | null
-  meeting_title: string | null
-  recording_id: string | null
-  share_url: string | null
-  scheduled_start_time: string | null
-  summary_markdown: string | null
-  imported_at: string | null
+  id?: string
+  title?: string | null
+  meeting_title?: string | null
+  name?: string | null
+  started_at?: string | null
+  start_time?: string | null
+  created_at?: string | null
+  fathom_url?: string | null
+  url?: string | null
+  summary?: string | null
 }
 
-const sections: Section[] = ['integrations', 'profile', 'notifications', 'jamie', 'data']
+const GOOGLE_PROVIDER_TOKEN_KEY = 'spoonflow_google_provider_token'
+const FATHOM_SETTINGS_KEY = 'spoonflow_fathom_settings'
 
-const nav: { group: string; items: { id: Section; label: string; icon: string }[] }[] = [
-  { group: 'Workspace', items: [{ id: 'profile', label: 'Profile', icon: '◐' }, { id: 'integrations', label: 'Integrations', icon: '↻' }] },
-  { group: 'Preferences', items: [{ id: 'notifications', label: 'Notifications', icon: '◌' }, { id: 'jamie', label: 'Jamie', icon: '✦' }] },
-  { group: 'Admin', items: [{ id: 'data', label: 'Data & Privacy', icon: '◎' }] },
-]
+function getInitialSection(): SettingsSection {
+  const path = window.location.pathname
 
-const GOOGLE_CALENDAR_SCOPES = [
-  'https://www.googleapis.com/auth/calendar.readonly',
-  'https://www.googleapis.com/auth/userinfo.email',
-  'https://www.googleapis.com/auth/userinfo.profile',
-].join(' ')
+  if (path.includes('/settings/integrations')) return 'integrations'
 
-function Toggle({ on = false }: { on?: boolean }) {
-  return <span className={`relative h-5 w-9 rounded-full transition ${on ? 'bg-[var(--nurture)]' : 'bg-[#e0ddd8]'}`}><span className={`absolute top-[3px] h-3.5 w-3.5 rounded-full bg-white shadow transition ${on ? 'left-[19px]' : 'left-[3px]'}`} /></span>
+  return 'integrations'
 }
 
-function IntegrationCard({ title, desc, connectedLabel = 'Connected', buttonLabel = 'Connect', status = 'available', color, onClick, children }: { title: string; desc: string; connectedLabel?: string; buttonLabel?: string; status?: IntegrationState; color: string; onClick?: () => void | Promise<void>; children?: ReactNode }) {
-  const connected = status === 'connected'
-  const needsBackend = status === 'needsBackend'
+function getFathomWebhookUrl() {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
 
+  if (!supabaseUrl) return 'Supabase URL missing'
+
+  return `${supabaseUrl.replace(/\/$/, '')}/functions/v1/fathom-webhook`
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return 'No date'
+
+  try {
+    return new Date(value).toLocaleString([], {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+  } catch {
+    return value
+  }
+}
+
+function getMeetingTitle(meeting: FathomMeeting) {
   return (
-    <article className={`rounded-[11px] border-[0.5px] bg-white p-5 ${connected ? 'border-[rgba(143,167,144,0.35)]' : 'border-[var(--border)]'}`}>
-      <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] text-white" style={{ backgroundColor: color }}>{title[0]}</span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-[13px] font-medium">{title}</p>
-              <p className="mt-1 max-w-[560px] text-[11.5px] leading-relaxed text-[var(--muted)]">{desc}</p>
-            </div>
-            <button
-              type="button"
-              disabled={connected || needsBackend || !onClick}
-              onClick={onClick}
-              className={`rounded-[8px] px-3 py-1.5 text-[11.5px] font-medium transition ${connected ? 'bg-[#f0f6f0] text-[#5a7a60]' : needsBackend ? 'cursor-not-allowed bg-[#f5f3f0] text-[var(--muted)]' : 'bg-[var(--jamie)] text-white hover:bg-[#5a1d4a]'}`}
-            >
-              {connected ? connectedLabel : needsBackend ? 'Backend needed' : buttonLabel}
-            </button>
-          </div>
-          {children}
-        </div>
-      </div>
-    </article>
+    meeting.title ||
+    meeting.meeting_title ||
+    meeting.name ||
+    'Untitled Fathom meeting'
   )
 }
 
-function validSection(value: string | undefined): Section {
-  return sections.includes(value as Section) ? (value as Section) : 'integrations'
+function getMeetingDate(meeting: FathomMeeting) {
+  return meeting.started_at || meeting.start_time || meeting.created_at || null
 }
 
-function formatDate(value: string | null) {
-  if (!value) return 'No date'
-  return new Date(value).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+function getMeetingUrl(meeting: FathomMeeting) {
+  return meeting.fathom_url || meeting.url || null
 }
 
 export function SettingsPage() {
-  const params = useParams()
-  const navigate = useNavigate()
-  const [section, setSection] = useState<Section>(() => validSection(params.section))
+  const [activeSection, setActiveSection] = useState<SettingsSection>(() => getInitialSection())
+  const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [googleConnected, setGoogleConnected] = useState(false)
-  const [statusMessage, setStatusMessage] = useState('')
-  const [fathomEnabled, setFathomEnabled] = useState(() => localStorage.getItem('spoonflow_fathom_enabled') === 'true')
-  const [fathomWorkspaceUrl, setFathomWorkspaceUrl] = useState(() => localStorage.getItem('spoonflow_fathom_workspace_url') ?? '')
+  const [fathomEnabled, setFathomEnabled] = useState(false)
+  const [fathomWorkspaceUrl, setFathomWorkspaceUrl] = useState('')
   const [fathomMeetings, setFathomMeetings] = useState<FathomMeeting[]>([])
-  const [fathomSyncing, setFathomSyncing] = useState(false)
+  const [isSyncingFathom, setIsSyncingFathom] = useState(false)
+  const [isLoadingMeetings, setIsLoadingMeetings] = useState(false)
 
-  useEffect(() => setSection(validSection(params.section)), [params.section])
+  const webhookUrl = useMemo(() => getFathomWebhookUrl(), [])
 
-  useEffect(() => {
-    const load = async () => {
-      const { data } = await supabase.auth.getSession()
-      const providers = data.session?.user.app_metadata?.providers as string[] | undefined
-      setGoogleConnected(Boolean(data.session?.provider_token || providers?.includes('google')))
-    }
-    void load()
-  }, [])
+  const loadFathomMeetings = useCallback(async () => {
+    setIsLoadingMeetings(true)
 
-  const currentUrl = useMemo(() => window.location.origin, [])
-  const fathomWebhookUrl = useMemo(() => {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
-    return supabaseUrl ? `${supabaseUrl.replace('.supabase.co', '.functions.supabase.co')}/fathom-webhook` : 'Your Supabase Function URL/fathom-webhook'
-  }, [])
+    try {
+      const { data, error } = await supabase
+        .from('fathom_meetings')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10)
 
-  const loadFathomMeetings = async () => {
-    const { data, error } = await supabase
-      .from('fathom_meetings')
-      .select('id,title,meeting_title,recording_id,share_url,scheduled_start_time,summary_markdown,imported_at')
-      .order('scheduled_start_time', { ascending: false })
-      .limit(5)
-
-    if (error) {
-      if (error.code === '42P01') {
-        setStatusMessage('Fathom table not found yet. Run the 002_fathom_meeting_imports.sql migration in Supabase first.')
+      if (error) {
+        setStatusMessage(error.message)
         return
       }
-      setStatusMessage(error.message)
-      return
-    }
 
-    setFathomMeetings((data as FathomMeeting[]) ?? [])
-  }
+      setFathomMeetings((data ?? []) as FathomMeeting[])
+    } finally {
+      setIsLoadingMeetings(false)
+    }
+  }, [])
 
   useEffect(() => {
-    if (section === 'integrations') void loadFathomMeetings()
-  }, [section])
+    const saved = localStorage.getItem(FATHOM_SETTINGS_KEY)
 
-  const changeSection = (next: Section) => {
-    setSection(next)
-    navigate(`/settings/${next}`)
-  }
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as {
+          enabled?: boolean
+          workspaceUrl?: string
+        }
+
+        setFathomEnabled(Boolean(parsed.enabled))
+        setFathomWorkspaceUrl(parsed.workspaceUrl ?? '')
+      } catch {
+        // Ignore malformed local settings.
+      }
+    }
+
+    const hydrateGoogleStatus = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (session?.provider_token) {
+        localStorage.setItem(GOOGLE_PROVIDER_TOKEN_KEY, session.provider_token)
+      }
+
+      setGoogleConnected(Boolean(session || localStorage.getItem(GOOGLE_PROVIDER_TOKEN_KEY)))
+    }
+
+    void hydrateGoogleStatus()
+    void loadFathomMeetings()
+  }, [loadFathomMeetings])
 
   const connectGoogleCalendar = async () => {
-    setStatusMessage('Opening Google Calendar authorization…')
+    setStatusMessage(null)
+    localStorage.removeItem(GOOGLE_PROVIDER_TOKEN_KEY)
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/settings/integrations`,
-        scopes: GOOGLE_CALENDAR_SCOPES,
-        queryParams: { access_type: 'offline', prompt: 'consent' },
+        scopes: 'https://www.googleapis.com/auth/calendar.readonly email profile',
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
       },
     })
-    if (error) setStatusMessage(error.message)
-  }
-
-  const saveFathomSettings = () => {
-    localStorage.setItem('spoonflow_fathom_enabled', String(fathomEnabled))
-    localStorage.setItem('spoonflow_fathom_workspace_url', fathomWorkspaceUrl.trim())
-    setStatusMessage('Fathom settings saved for this browser. Add the API key and webhook secret in Supabase for automatic imports.')
-  }
-
-  const syncFathomNow = async () => {
-    setFathomSyncing(true)
-    setStatusMessage('Syncing recent Fathom meetings…')
-    const { data, error } = await supabase.functions.invoke('fathom-sync', {
-      body: { limit: 20 },
-    })
-    setFathomSyncing(false)
 
     if (error) {
       setStatusMessage(error.message)
-      return
     }
-
-    setStatusMessage(`Fathom sync complete. Imported ${data?.imported ?? 0} meeting${data?.imported === 1 ? '' : 's'}.`)
-    await loadFathomMeetings()
   }
 
+  const saveFathomSetup = () => {
+    localStorage.setItem(
+      FATHOM_SETTINGS_KEY,
+      JSON.stringify({
+        enabled: fathomEnabled,
+        workspaceUrl: fathomWorkspaceUrl,
+      }),
+    )
+
+    setStatusMessage(
+      'Fathom settings saved for this browser. Add the API key and webhook secret in Supabase for automatic imports.',
+    )
+  }
+
+  const syncFathomMeetings = async () => {
+    setStatusMessage(null)
+    setIsSyncingFathom(true)
+
+    try {
+      const { data, error } = await supabase.functions.invoke('fathom-sync', {
+        body: { limit: 10 },
+      })
+
+      if (error) {
+        setStatusMessage(error.message || 'Edge Function returned a non-2xx status code')
+        return
+      }
+
+      const importedCount =
+        typeof data?.imported === 'number'
+          ? data.imported
+          : typeof data?.count === 'number'
+            ? data.count
+            : typeof data?.meetings?.length === 'number'
+              ? data.meetings.length
+              : null
+
+      setStatusMessage(
+        importedCount === null
+          ? 'Fathom sync complete.'
+          : `Fathom sync complete. Imported ${importedCount} meetings.`,
+      )
+
+      await loadFathomMeetings()
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : 'Unknown Fathom sync error')
+    } finally {
+      setIsSyncingFathom(false)
+    }
+  }
+
+  const sections: Array<{
+    id: SettingsSection
+    label: string
+    group: 'Workspace' | 'Preferences' | 'Admin'
+  }> = [
+    { id: 'profile', label: 'Profile', group: 'Workspace' },
+    { id: 'integrations', label: 'Integrations', group: 'Workspace' },
+    { id: 'notifications', label: 'Notifications', group: 'Preferences' },
+    { id: 'jamie', label: 'Jamie', group: 'Preferences' },
+    { id: 'data', label: 'Data & Privacy', group: 'Admin' },
+  ]
+
+  const groupedSections = sections.reduce(
+    (acc, item) => {
+      acc[item.group] = [...(acc[item.group] ?? []), item]
+      return acc
+    },
+    {} as Record<string, typeof sections>,
+  )
+
   return (
-    <section className="overflow-hidden rounded-xl border-[0.5px] border-[var(--border)] bg-[var(--bg)]">
-      <header className="border-b-[0.5px] border-[var(--border)] bg-white px-5 py-4">
-        <h1 className="font-serif text-[22px] font-medium tracking-[-0.4px]">Settings</h1>
-        <p className="mt-0.5 text-[11px] text-[var(--muted)]">Manage integrations, preferences, Jamie, and workspace details.</p>
+    <section className="mx-auto max-w-6xl rounded-2xl border border-[var(--border)] bg-white">
+      <header className="border-b border-[var(--border)] px-6 py-5">
+        <h1 className="text-2xl">Settings</h1>
+        <p className="mt-1 text-sm text-[var(--muted)]">
+          Manage integrations, preferences, Jamie, and workspace details.
+        </p>
       </header>
 
-      <div className="flex min-h-[620px] overflow-hidden">
-        <aside className="hidden w-[190px] shrink-0 overflow-y-auto border-r-[0.5px] border-[var(--border)] bg-white py-4 md:block">
-          {nav.map((group) => <div key={group.group}><p className="px-4 pb-1 pt-3 text-[10px] font-medium uppercase tracking-[0.06em] text-[var(--muted)] first:pt-0">{group.group}</p>{group.items.map((item) => <button key={item.id} type="button" className={`flex w-full items-center gap-2 border-l-2 px-4 py-2 text-left text-[12px] transition ${section === item.id ? 'border-l-[var(--jamie)] bg-[#f5f3f0] font-medium text-[var(--jamie)]' : 'border-l-transparent text-[var(--text)] hover:bg-[#f5f3f0]'}`} onClick={() => changeSection(item.id)}><span className="w-4 text-center opacity-60">{item.icon}</span>{item.label}</button>)}</div>)}
+      <div className="grid min-h-[620px] grid-cols-1 md:grid-cols-[220px_1fr]">
+        <aside className="border-b border-[var(--border)] bg-white p-4 md:border-b-0 md:border-r">
+          {Object.entries(groupedSections).map(([group, items]) => (
+            <div key={group} className="mb-5">
+              <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+                {group}
+              </p>
+
+              <div className="space-y-1">
+                {items.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveSection(item.id)
+                      if (item.id === 'integrations') {
+                        window.history.replaceState(null, '', '/settings/integrations')
+                      } else {
+                        window.history.replaceState(null, '', '/settings')
+                      }
+                    }}
+                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition ${
+                      activeSection === item.id
+                        ? 'bg-[#f5f1f4] font-medium text-[var(--jamie)]'
+                        : 'text-[var(--text)] hover:bg-black/[0.04]'
+                    }`}
+                  >
+                    <span className="h-2 w-2 rounded-full bg-current opacity-40" />
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
         </aside>
 
-        <main className="flex-1 overflow-y-auto p-6 md:p-8">
-          {statusMessage && <div className="mb-4 rounded-[10px] border-[0.5px] border-[rgba(107,35,88,0.2)] bg-[rgba(107,35,88,0.06)] px-4 py-3 text-[12px] text-[var(--jamie)]">{statusMessage}</div>}
+        <main className="bg-[var(--bg)] p-5 md:p-8">
+          {statusMessage && (
+            <div className="mb-5 rounded-xl border border-[rgba(107,35,88,0.18)] bg-[rgba(107,35,88,0.06)] px-4 py-3 text-sm text-[var(--jamie)]">
+              {statusMessage}
+            </div>
+          )}
 
-          {section === 'integrations' && <div><h2 className="font-serif text-[21px] font-medium tracking-[-0.3px]">Integrations</h2><p className="mb-5 mt-1 max-w-[600px] text-[12px] leading-relaxed text-[var(--muted)]">Connect the systems that power SpoonFlow’s planning, meeting prep, and follow-up workflows.</p><div className="space-y-3">
-            <IntegrationCard title="Google Calendar" desc="Authorize SpoonFlow to read your Google Calendar so Today and Calendar can pull in meetings, medical appointments, and prep blocks." connectedLabel="Connected" buttonLabel="Connect" status={googleConnected ? 'connected' : 'available'} color="#6484a1" onClick={connectGoogleCalendar}><p className="mt-3 rounded-[8px] bg-[#f5f3f0] px-3 py-2 text-[11px] leading-relaxed text-[var(--muted)]">Vercel URL to add in Supabase redirect settings: <span className="font-medium text-[var(--text)]">{currentUrl}/settings/integrations</span></p></IntegrationCard>
-            <IntegrationCard title="Supabase" desc="Stores contacts, tasks, content items, goals, Jamie conversations, app settings, and imported Fathom meeting transcripts." status="connected" color="#8fa790" />
-            <IntegrationCard title="Anthropic Claude" desc="Powers Jamie through the Supabase Edge Function proxy. Configure this with ANTHROPIC_API_KEY in Supabase, not in the Vercel frontend." status="needsBackend" color="#6b2358" />
-            <IntegrationCard title="Fathom" desc="Import meeting transcripts, summaries, and action items into SpoonFlow through a Supabase Edge Function and optional Fathom webhook." connectedLabel="Configured" buttonLabel="Save setup" status={fathomEnabled ? 'connected' : 'available'} color="#c198ad" onClick={saveFathomSettings}><div className="mt-3 grid gap-3 rounded-[10px] border-[0.5px] border-[var(--border)] bg-[#fffdfd] p-3"><label className="flex items-center justify-between gap-3 text-[12px]"><span>Enable Fathom imports</span><button type="button" onClick={() => setFathomEnabled((prev) => !prev)}><Toggle on={fathomEnabled} /></button></label><label className="grid gap-1 text-[11px] text-[var(--muted)]">Fathom workspace or login URL<input value={fathomWorkspaceUrl} onChange={(event) => setFathomWorkspaceUrl(event.target.value)} placeholder="https://fathom.video/..." className="rounded-[8px] border-[0.5px] border-[var(--border)] px-3 py-2 text-[12px] text-[var(--text)] outline-none focus:border-[rgba(193,152,173,0.6)]" /></label><div className="rounded-[8px] bg-[#f5f3f0] px-3 py-2 text-[11px] leading-relaxed text-[var(--muted)]">Webhook destination URL: <span className="font-medium text-[var(--text)]">{fathomWebhookUrl}</span></div><div className="flex flex-wrap gap-2"><button type="button" onClick={saveFathomSettings} className="rounded-[8px] bg-[var(--jamie)] px-3 py-1.5 text-[11.5px] font-medium text-white hover:bg-[#5a1d4a]">Save Fathom setup</button><button type="button" onClick={syncFathomNow} disabled={fathomSyncing} className="rounded-[8px] border-[0.5px] border-[var(--border)] bg-white px-3 py-1.5 text-[11.5px] font-medium text-[var(--text)] hover:bg-[#f5f3f0] disabled:opacity-50">{fathomSyncing ? 'Syncing…' : 'Sync recent meetings'}</button><button type="button" onClick={loadFathomMeetings} className="rounded-[8px] border-[0.5px] border-[var(--border)] bg-white px-3 py-1.5 text-[11.5px] font-medium text-[var(--text)] hover:bg-[#f5f3f0]">Refresh list</button></div>{fathomMeetings.length > 0 && <div className="mt-1 space-y-2"><p className="text-[10.5px] font-medium uppercase tracking-[0.05em] text-[var(--muted)]">Recently imported</p>{fathomMeetings.map((meeting) => <article key={meeting.id} className="rounded-[8px] border-[0.5px] border-[var(--border)] bg-white px-3 py-2"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-[12px] font-medium">{meeting.meeting_title || meeting.title || 'Untitled meeting'}</p><p className="mt-0.5 text-[10.5px] text-[var(--muted)]">{formatDate(meeting.scheduled_start_time)} · Recording {meeting.recording_id}</p></div>{meeting.share_url && <a className="text-[10.5px] font-medium text-[var(--jamie)]" href={meeting.share_url} target="_blank" rel="noreferrer">Open Fathom</a>}</div>{meeting.summary_markdown && <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[var(--muted)]">{meeting.summary_markdown.replaceAll('#', '').trim()}</p>}</article>)}</div>}</div></IntegrationCard>
-          </div></div>}
+          {activeSection === 'profile' && (
+            <div>
+              <h2 className="text-2xl">Profile</h2>
+              <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
+                Workspace profile settings will live here.
+              </p>
 
-          {section === 'profile' && <div><h2 className="font-serif text-[21px] font-medium tracking-[-0.3px]">Profile</h2><p className="mb-5 mt-1 max-w-[560px] text-[12px] leading-relaxed text-[var(--muted)]">Basic workspace details used across dashboards and Jamie context.</p><div className="rounded-[11px] border-[0.5px] border-[var(--border)] bg-white p-5"><label className="text-[10.5px] uppercase tracking-[0.05em] text-[var(--muted)]">Name</label><input defaultValue="Meredith" className="mt-2 w-full rounded-[8px] border-[0.5px] border-[var(--border)] px-3 py-2 text-[13px] outline-none" /><label className="mt-4 block text-[10.5px] uppercase tracking-[0.05em] text-[var(--muted)]">Company</label><input defaultValue="Empower Health Strategies" className="mt-2 w-full rounded-[8px] border-[0.5px] border-[var(--border)] px-3 py-2 text-[13px] outline-none" /></div></div>}
-          {section === 'notifications' && <div><h2 className="font-serif text-[21px] font-medium tracking-[-0.3px]">Notifications</h2><p className="mb-5 mt-1 max-w-[560px] text-[12px] leading-relaxed text-[var(--muted)]">Choose which prompts and reminders should show up in SpoonFlow.</p><div className="space-y-2">{['Morning planning prompt', 'Nurture follow-up reminders', 'Content due soon reminders', 'Calendar sync alerts'].map((item, index) => <div key={item} className="flex items-center justify-between rounded-[11px] border-[0.5px] border-[var(--border)] bg-white p-4"><span className="text-[13px]">{item}</span><Toggle on={index < 3} /></div>)}</div></div>}
-          {section === 'jamie' && <div><h2 className="font-serif text-[21px] font-medium tracking-[-0.3px]">Jamie</h2><p className="mb-5 mt-1 max-w-[560px] text-[12px] leading-relaxed text-[var(--muted)]">Tune Jamie’s support across writing, planning, meetings, and relationship follow-up.</p><div className="rounded-[11px] border-[0.5px] border-[var(--border)] bg-white p-5"><p className="text-[10.5px] uppercase tracking-[0.05em] text-[var(--muted)]">Favorite quick chips</p><div className="mt-3 flex flex-wrap gap-2">{['Sharpen hook', 'What’s missing', 'Make concise', 'More emotional', 'Stronger ending'].map((chip) => <span key={chip} className="rounded-full bg-[rgba(107,35,88,0.08)] px-3 py-1.5 text-[11px] text-[var(--jamie)]">{chip}</span>)}</div></div></div>}
-          {section === 'data' && <div><h2 className="font-serif text-[21px] font-medium tracking-[-0.3px]">Data & Privacy</h2><p className="mb-5 mt-1 max-w-[560px] text-[12px] leading-relaxed text-[var(--muted)]">Export or review the workspace data SpoonFlow uses.</p><div className="grid gap-3 md:grid-cols-2"><div className="rounded-[11px] border-[0.5px] border-[var(--border)] bg-white p-5"><p className="text-[13px] font-medium">Export workspace</p><p className="mt-1 text-[11.5px] text-[var(--muted)]">Download contacts, tasks, content, goals, and Fathom imports.</p></div><div className="rounded-[11px] border-[0.5px] border-[var(--border)] bg-white p-5"><p className="text-[13px] font-medium">Review Jamie context</p><p className="mt-1 text-[11.5px] text-[var(--muted)]">See what Jamie can reference while helping you.</p></div></div></div>}
+              <div className="mt-6 rounded-xl border border-[var(--border)] bg-white p-5">
+                <p className="font-medium">SpoonFlow workspace</p>
+                <p className="mt-1 text-sm text-[var(--muted)]">
+                  Your workspace is connected to Supabase and Vercel.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'integrations' && (
+            <div>
+              <h2 className="text-2xl">Integrations</h2>
+              <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
+                Connect the systems that power SpoonFlow&apos;s planning, meeting prep, and follow-up workflows.
+              </p>
+
+              <div className="mt-6 space-y-4">
+                <article className="rounded-xl border border-[var(--border)] bg-white p-5">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div className="flex gap-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--meeting)] text-sm font-semibold text-white">
+                        G
+                      </div>
+
+                      <div>
+                        <h3 className="font-semibold">Google Calendar</h3>
+                        <p className="mt-1 max-w-2xl text-sm text-[var(--muted)]">
+                          Authorize SpoonFlow to read your Google Calendar so Today and Calendar can pull in meetings,
+                          medical appointments, and prep blocks.
+                        </p>
+
+                        <div className="mt-4 rounded-lg bg-[#f3f1ef] px-3 py-3 text-xs text-[var(--muted)]">
+                          Vercel URL to add in Supabase redirect settings:{' '}
+                          <span className="font-semibold text-[var(--text)]">
+                            {window.location.origin}/settings/integrations
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      {googleConnected && (
+                        <span className="rounded-lg bg-[#e8f2ea] px-3 py-2 text-xs font-medium text-[#4f7457]">
+                          Connected
+                        </span>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={connectGoogleCalendar}
+                        className="rounded-lg bg-[var(--jamie)] px-3 py-2 text-xs font-semibold text-white"
+                      >
+                        {googleConnected ? 'Reconnect' : 'Connect'}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+
+                <article className="rounded-xl border border-[var(--border)] bg-white p-5">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div className="flex gap-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--nurture)] text-sm font-semibold text-white">
+                        S
+                      </div>
+
+                      <div>
+                        <h3 className="font-semibold">Supabase</h3>
+                        <p className="mt-1 max-w-2xl text-sm text-[var(--muted)]">
+                          Stores contacts, tasks, content items, goals, Jamie conversations, app settings, and imported
+                          Fathom meeting transcripts.
+                        </p>
+                      </div>
+                    </div>
+
+                    <span className="w-fit rounded-lg bg-[#e8f2ea] px-3 py-2 text-xs font-medium text-[#4f7457]">
+                      Connected
+                    </span>
+                  </div>
+                </article>
+
+                <article className="rounded-xl border border-[var(--border)] bg-white p-5">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div className="flex gap-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--jamie)] text-sm font-semibold text-white">
+                        A
+                      </div>
+
+                      <div>
+                        <h3 className="font-semibold">Anthropic Claude</h3>
+                        <p className="mt-1 max-w-2xl text-sm text-[var(--muted)]">
+                          Powers Jamie through the Supabase Edge Function proxy. Configure this with
+                          ANTHROPIC_API_KEY in Supabase, not in the Vercel frontend.
+                        </p>
+                      </div>
+                    </div>
+
+                    <span className="w-fit rounded-lg bg-[#f3f1ef] px-3 py-2 text-xs font-medium text-[var(--muted)]">
+                      Backend needed
+                    </span>
+                  </div>
+                </article>
+
+                <article className="rounded-xl border border-[var(--border)] bg-white p-5">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div className="flex gap-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#c198ad] text-sm font-semibold text-white">
+                        F
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-semibold">Fathom</h3>
+                        <p className="mt-1 max-w-2xl text-sm text-[var(--muted)]">
+                          Import meeting transcripts, summaries, and action items into SpoonFlow through a Supabase
+                          Edge Function and optional Fathom webhook.
+                        </p>
+
+                        <div className="mt-5 rounded-xl border border-[var(--border)] bg-white p-4">
+                          <label className="flex items-center justify-between gap-4 text-sm font-medium">
+                            <span>Enable Fathom imports</span>
+                            <input
+                              type="checkbox"
+                              checked={fathomEnabled}
+                              onChange={(event) => setFathomEnabled(event.target.checked)}
+                              className="h-4 w-4"
+                            />
+                          </label>
+
+                          <label className="mt-4 block text-xs font-medium text-[var(--muted)]">
+                            Fathom workspace or login URL
+                          </label>
+                          <input
+                            value={fathomWorkspaceUrl}
+                            onChange={(event) => setFathomWorkspaceUrl(event.target.value)}
+                            placeholder="https://fathom.video/home"
+                            className="mt-2 w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm outline-none focus:border-[var(--jamie)]"
+                          />
+
+                          <div className="mt-4 rounded-lg bg-[#f3f1ef] px-3 py-3 text-xs text-[var(--muted)]">
+                            Webhook destination URL:{' '}
+                            <span className="font-semibold text-[var(--text)]">{webhookUrl}</span>
+                          </div>
+
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={saveFathomSetup}
+                              className="rounded-lg bg-[var(--jamie)] px-3 py-2 text-xs font-semibold text-white"
+                            >
+                              Save Fathom setup
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={syncFathomMeetings}
+                              disabled={isSyncingFathom}
+                              className="rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--text)] disabled:opacity-50"
+                            >
+                              {isSyncingFathom ? 'Syncing...' : 'Sync recent meetings'}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={loadFathomMeetings}
+                              disabled={isLoadingMeetings}
+                              className="rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--text)] disabled:opacity-50"
+                            >
+                              {isLoadingMeetings ? 'Refreshing...' : 'Refresh list'}
+                            </button>
+                          </div>
+
+                          <div className="mt-5">
+                            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+                              Recently imported
+                            </p>
+
+                            {fathomMeetings.length === 0 ? (
+                              <div className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--bg)] p-4 text-sm text-[var(--muted)]">
+                                No imported Fathom meetings yet.
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                {fathomMeetings.map((meeting, index) => {
+                                  const url = getMeetingUrl(meeting)
+
+                                  return (
+                                    <div
+                                      key={meeting.id ?? `${getMeetingTitle(meeting)}-${index}`}
+                                      className="rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-3"
+                                    >
+                                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                                        <div>
+                                          <p className="text-sm font-semibold text-[var(--text)]">
+                                            {getMeetingTitle(meeting)}
+                                          </p>
+                                          <p className="mt-1 text-xs text-[var(--muted)]">
+                                            {formatDate(getMeetingDate(meeting))}
+                                          </p>
+                                        </div>
+
+                                        {url && (
+                                          <a
+                                            href={url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-xs font-semibold text-[var(--jamie)]"
+                                          >
+                                            Open in Fathom
+                                          </a>
+                                        )}
+                                      </div>
+
+                                      {meeting.summary && (
+                                        <p className="mt-2 line-clamp-2 text-xs text-[var(--muted)]">
+                                          {meeting.summary}
+                                        </p>
+                                      )}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'notifications' && (
+            <div>
+              <h2 className="text-2xl">Notifications</h2>
+              <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
+                Notification settings will live here.
+              </p>
+            </div>
+          )}
+
+          {activeSection === 'jamie' && (
+            <div>
+              <h2 className="text-2xl">Jamie</h2>
+              <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
+                Jamie preferences, prompt behavior, and workflow defaults will live here.
+              </p>
+            </div>
+          )}
+
+          {activeSection === 'data' && (
+            <div>
+              <h2 className="text-2xl">Data & Privacy</h2>
+              <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
+                Data export, privacy, and workspace cleanup settings will live here.
+              </p>
+            </div>
+          )}
         </main>
       </div>
     </section>
