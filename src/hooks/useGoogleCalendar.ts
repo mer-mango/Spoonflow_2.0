@@ -1,50 +1,89 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-const EHS_MTGS_CALENDAR_ID = import.meta.env.VITE_GOOGLE_EHS_MTGS_CALENDAR_ID || 'primary'
-const MEDICAL_APPTS_CALENDAR_ID = import.meta.env.VITE_GOOGLE_MEDICAL_CALENDAR_ID || ''
-const VIRTUAL_APPTS_CALENDAR_ID = import.meta.env.VITE_GOOGLE_VIRTUAL_CALENDAR_ID || ''
-
-const ADDITIONAL_CALENDAR_IDS = (import.meta.env.VITE_GOOGLE_ADDITIONAL_CALENDAR_IDS || '')
-  .split(',')
-  .map((id: string) => id.trim())
-  .filter(Boolean)
+const EHS_MTGS_CALENDAR_ID = import.meta.env.VITE_GOOGLE_EHS_MTGS_CALENDAR_ID || ''
+const VIRTUAL_CALENDAR_ID = import.meta.env.VITE_GOOGLE_VIRTUAL_CALENDAR_ID || ''
+const MEDICAL_CALENDAR_ID = import.meta.env.VITE_GOOGLE_MEDICAL_CALENDAR_ID || ''
+const CBC_CALENDAR_ID = import.meta.env.VITE_GOOGLE_CBC_CALENDAR_ID || ''
+const FAMILY_CALENDAR_ID = import.meta.env.VITE_GOOGLE_FAMILY_CALENDAR_ID || ''
+const COMMON_GROUNDS_CALENDAR_ID = import.meta.env.VITE_GOOGLE_COMMON_GROUNDS_CALENDAR_ID || ''
+const TYT_2026_SPRING_CALENDAR_ID = import.meta.env.VITE_GOOGLE_TYT_2026_SPRING_CALENDAR_ID || ''
+const MEREDITH_MANGOLD_CALENDAR_ID = import.meta.env.VITE_GOOGLE_MEREDITH_MANGOLD_CALENDAR_ID || ''
 
 const CALENDAR_IDS = Array.from(
   new Set(
     [
       EHS_MTGS_CALENDAR_ID,
-      MEDICAL_APPTS_CALENDAR_ID,
-      VIRTUAL_APPTS_CALENDAR_ID,
-      ...ADDITIONAL_CALENDAR_IDS,
-    ].filter(Boolean),
+      VIRTUAL_CALENDAR_ID,
+      MEDICAL_CALENDAR_ID,
+      CBC_CALENDAR_ID,
+      FAMILY_CALENDAR_ID,
+      COMMON_GROUNDS_CALENDAR_ID,
+      TYT_2026_SPRING_CALENDAR_ID,
+      MEREDITH_MANGOLD_CALENDAR_ID,
+    ]
+      .map((id) => id.trim())
+      .filter(Boolean),
   ),
 )
 
-export const BUFFER_RULES: Record<string, { duration: number; type: 'prep' | 'travel' }> = {
-  [EHS_MTGS_CALENDAR_ID]: { duration: 15, type: 'prep' },
-  [MEDICAL_APPTS_CALENDAR_ID]: { duration: 45, type: 'travel' },
-  [VIRTUAL_APPTS_CALENDAR_ID]: { duration: 15, type: 'prep' },
+export const CALENDAR_COLORS: Record<string, string> = {
+  [EHS_MTGS_CALENDAR_ID]: '#6484a1',
+  [VIRTUAL_CALENDAR_ID]: '#d4a77a',
+  [MEDICAL_CALENDAR_ID]: '#c9888e',
+  [CBC_CALENDAR_ID]: '#c198ad',
+  [FAMILY_CALENDAR_ID]: '#e1d6cb',
+  [COMMON_GROUNDS_CALENDAR_ID]: '#918585',
+  [TYT_2026_SPRING_CALENDAR_ID]: '#bcd1d5',
+  [MEREDITH_MANGOLD_CALENDAR_ID]: '#93738e',
 }
 
-type Contact = { id: string; email: string | null; color?: string | null; initials?: string | null }
+export const CALENDAR_LABELS: Record<string, string> = {
+  [EHS_MTGS_CALENDAR_ID]: 'EHS Mtgs',
+  [VIRTUAL_CALENDAR_ID]: 'Virtual Appts',
+  [MEDICAL_CALENDAR_ID]: 'Medical Appts',
+  [CBC_CALENDAR_ID]: 'CBC',
+  [FAMILY_CALENDAR_ID]: 'Family',
+  [COMMON_GROUNDS_CALENDAR_ID]: 'Common Grounds',
+  [TYT_2026_SPRING_CALENDAR_ID]: 'TYT 2026 Spring',
+  [MEREDITH_MANGOLD_CALENDAR_ID]: 'Meredith Mangold',
+}
 
-type CalendarEvent = {
+export const BUFFER_RULES: Record<string, { duration: number; type: 'prep' | 'travel' }> = {
+  [EHS_MTGS_CALENDAR_ID]: { duration: 15, type: 'prep' },
+  [MEDICAL_CALENDAR_ID]: { duration: 45, type: 'travel' },
+  [VIRTUAL_CALENDAR_ID]: { duration: 15, type: 'prep' },
+}
+
+type Contact = {
+  id: string
+  email: string | null
+  color?: string | null
+  initials?: string | null
+}
+
+export type CalendarEvent = {
   id: string
   title: string
   calendarId?: string
+  calendarLabel?: string
+  color?: string
   attendees?: { email?: string }[]
   startTime: string
   endTime: string
 }
 
-type EnrichedEvent = CalendarEvent & {
+export type EnrichedEvent = CalendarEvent & {
   manualContactAssignment?: string
   contactDetails?: { id: string; color?: string | null; initials?: string | null }
   excludedFromPlanMyDay?: boolean
 }
 
-type Suggestion = { email: string; snoozeUntil?: number; dismissed?: boolean }
+type Suggestion = {
+  email: string
+  snoozeUntil?: number
+  dismissed?: boolean
+}
 
 const SUGGESTIONS_KEY = 'spoonflow_contact_suggestions'
 
@@ -65,6 +104,14 @@ function writeSuggestions(queue: Suggestion[]) {
 
 function encodeCalendarId(calendarId: string) {
   return encodeURIComponent(calendarId)
+}
+
+function getCalendarColor(calendarId: string) {
+  return CALENDAR_COLORS[calendarId] || '#6484a1'
+}
+
+function getCalendarLabel(calendarId: string) {
+  return CALENDAR_LABELS[calendarId] || 'Calendar'
 }
 
 export function enrichCalendarEventsWithContacts(
@@ -92,7 +139,7 @@ export function enrichCalendarEventsWithContacts(
         contactDetails: contact
           ? { id: contact.id, color: contact.color, initials: contact.initials }
           : undefined,
-        excludedFromPlanMyDay: event.calendarId === VIRTUAL_APPTS_CALENDAR_ID,
+        excludedFromPlanMyDay: event.calendarId === VIRTUAL_CALENDAR_ID,
       }
     }
 
@@ -108,13 +155,13 @@ export function enrichCalendarEventsWithContacts(
         contactDetails: contact
           ? { id: contact.id, color: contact.color, initials: contact.initials }
           : undefined,
-        excludedFromPlanMyDay: event.calendarId === VIRTUAL_APPTS_CALENDAR_ID,
+        excludedFromPlanMyDay: event.calendarId === VIRTUAL_CALENDAR_ID,
       }
     }
 
     return {
       ...event,
-      excludedFromPlanMyDay: event.calendarId === VIRTUAL_APPTS_CALENDAR_ID,
+      excludedFromPlanMyDay: event.calendarId === VIRTUAL_CALENDAR_ID,
     }
   })
 }
@@ -190,6 +237,8 @@ async function fetchEventsForCalendar(
       id: `${calendarId}-${event.id}`,
       title: event.summary || 'Untitled event',
       calendarId,
+      calendarLabel: getCalendarLabel(calendarId),
+      color: getCalendarColor(calendarId),
       attendees: event.attendees ?? [],
       startTime: event.start?.dateTime ?? `${event.start?.date}T00:00:00`,
       endTime: event.end?.dateTime ?? `${event.end?.date ?? event.start?.date}T23:59:59`,
