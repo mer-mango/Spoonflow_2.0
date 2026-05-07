@@ -1,9 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-const EHS_MTGS_CALENDAR_ID = 'EHS_MTGS_CALENDAR_ID'
-const MEDICAL_APPTS_CALENDAR_ID = 'MEDICAL_APPTS_CALENDAR_ID'
-const VIRTUAL_APPTS_CALENDAR_ID = 'VIRTUAL_APPTS_CALENDAR_ID'
+const EHS_MTGS_CALENDAR_ID = import.meta.env.VITE_GOOGLE_EHS_MTGS_CALENDAR_ID || 'primary'
+const MEDICAL_APPTS_CALENDAR_ID = import.meta.env.VITE_GOOGLE_MEDICAL_CALENDAR_ID || ''
+const VIRTUAL_APPTS_CALENDAR_ID = import.meta.env.VITE_GOOGLE_VIRTUAL_CALENDAR_ID || ''
+
+const ADDITIONAL_CALENDAR_IDS = (import.meta.env.VITE_GOOGLE_ADDITIONAL_CALENDAR_IDS || '')
+  .split(',')
+  .map((id: string) => id.trim())
+  .filter(Boolean)
+
+const CALENDAR_IDS = Array.from(
+  new Set(
+    [
+      EHS_MTGS_CALENDAR_ID,
+      MEDICAL_APPTS_CALENDAR_ID,
+      VIRTUAL_APPTS_CALENDAR_ID,
+      ...ADDITIONAL_CALENDAR_IDS,
+    ].filter(Boolean),
+  ),
+)
 
 export const BUFFER_RULES: Record<string, { duration: number; type: 'prep' | 'travel' }> = {
   [EHS_MTGS_CALENDAR_ID]: { duration: 15, type: 'prep' },
@@ -12,6 +28,7 @@ export const BUFFER_RULES: Record<string, { duration: number; type: 'prep' | 'tr
 }
 
 type Contact = { id: string; email: string | null; color?: string | null; initials?: string | null }
+
 type CalendarEvent = {
   id: string
   title: string
@@ -20,6 +37,7 @@ type CalendarEvent = {
   startTime: string
   endTime: string
 }
+
 type EnrichedEvent = CalendarEvent & {
   manualContactAssignment?: string
   contactDetails?: { id: string; color?: string | null; initials?: string | null }
@@ -33,6 +51,7 @@ const SUGGESTIONS_KEY = 'spoonflow_contact_suggestions'
 function readSuggestions() {
   const raw = localStorage.getItem(SUGGESTIONS_KEY)
   if (!raw) return [] as Suggestion[]
+
   try {
     return JSON.parse(raw) as Suggestion[]
   } catch {
@@ -44,43 +63,67 @@ function writeSuggestions(queue: Suggestion[]) {
   localStorage.setItem(SUGGESTIONS_KEY, JSON.stringify(queue))
 }
 
+function encodeCalendarId(calendarId: string) {
+  return encodeURIComponent(calendarId)
+}
+
 export function enrichCalendarEventsWithContacts(
   calendarEvents: CalendarEvent[],
   contacts: Contact[],
   manualAssignments: { event_id: string; contact_id: string }[],
 ) {
   const contactById = new Map(contacts.map((contact) => [contact.id, contact]))
+
   const contactByEmail = new Map(
-    contacts.filter((contact) => contact.email).map((contact) => [contact.email!.toLowerCase(), contact]),
+    contacts
+      .filter((contact) => contact.email)
+      .map((contact) => [contact.email!.toLowerCase(), contact]),
   )
 
   return calendarEvents.map((event): EnrichedEvent => {
     const manual = manualAssignments.find((assignment) => assignment.event_id === event.id)
+
     if (manual) {
       const contact = contactById.get(manual.contact_id)
+
       return {
         ...event,
         manualContactAssignment: manual.contact_id,
-        contactDetails: contact ? { id: contact.id, color: contact.color, initials: contact.initials } : undefined,
+        contactDetails: contact
+          ? { id: contact.id, color: contact.color, initials: contact.initials }
+          : undefined,
         excludedFromPlanMyDay: event.calendarId === VIRTUAL_APPTS_CALENDAR_ID,
       }
     }
 
-    const matched = event.attendees?.find((attendee) => attendee.email && contactByEmail.has(attendee.email.toLowerCase()))
+    const matched = event.attendees?.find(
+      (attendee) => attendee.email && contactByEmail.has(attendee.email.toLowerCase()),
+    )
+
     if (matched?.email) {
       const contact = contactByEmail.get(matched.email.toLowerCase())
+
       return {
         ...event,
-        contactDetails: contact ? { id: contact.id, color: contact.color, initials: contact.initials } : undefined,
+        contactDetails: contact
+          ? { id: contact.id, color: contact.color, initials: contact.initials }
+          : undefined,
         excludedFromPlanMyDay: event.calendarId === VIRTUAL_APPTS_CALENDAR_ID,
       }
     }
 
-    return { ...event, excludedFromPlanMyDay: event.calendarId === VIRTUAL_APPTS_CALENDAR_ID }
+    return {
+      ...event,
+      excludedFromPlanMyDay: event.calendarId === VIRTUAL_APPTS_CALENDAR_ID,
+    }
   })
 }
 
-export function findNextCalendarEvent(contactId: string, contactEmail: string | null, enrichedEvents: EnrichedEvent[]) {
+export function findNextCalendarEvent(
+  contactId: string,
+  contactEmail: string | null,
+  enrichedEvents: EnrichedEvent[],
+) {
   const now = Date.now()
   const future = enrichedEvents.filter((event) => new Date(event.startTime).getTime() > now)
 
@@ -93,6 +136,7 @@ export function findNextCalendarEvent(contactId: string, contactEmail: string | 
   if (!contactEmail) return null
 
   const email = contactEmail.toLowerCase()
+
   const priority2 = future
     .filter((event) => event.attendees?.some((attendee) => attendee.email?.toLowerCase() === email))
     .sort((a, b) => +new Date(a.startTime) - +new Date(b.startTime))
@@ -100,10 +144,10 @@ export function findNextCalendarEvent(contactId: string, contactEmail: string | 
   return priority2[0] ?? null
 }
 
-
-async function fetchGoogleCalendarEvents(accessToken?: string | null): Promise<CalendarEvent[]> {
-  if (!accessToken) return []
-
+async function fetchEventsForCalendar(
+  accessToken: string,
+  calendarId: string,
+): Promise<CalendarEvent[]> {
   const now = new Date()
   const timeMax = new Date()
   timeMax.setDate(now.getDate() + 60)
@@ -116,14 +160,17 @@ async function fetchGoogleCalendarEvents(accessToken?: string | null): Promise<C
     maxResults: '100',
   })
 
-  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${params.toString()}`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
+  const response = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeCalendarId(calendarId)}/events?${params.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
     },
-  })
+  )
 
   if (!response.ok) {
-    console.warn('Google Calendar fetch failed', await response.text())
+    console.warn(`Google Calendar fetch failed for ${calendarId}`, await response.text())
     return []
   }
 
@@ -140,13 +187,27 @@ async function fetchGoogleCalendarEvents(accessToken?: string | null): Promise<C
   return (data.items ?? [])
     .filter((event) => event.start?.dateTime || event.start?.date)
     .map((event) => ({
-      id: event.id,
+      id: `${calendarId}-${event.id}`,
       title: event.summary || 'Untitled event',
-      calendarId: 'primary',
+      calendarId,
       attendees: event.attendees ?? [],
       startTime: event.start?.dateTime ?? `${event.start?.date}T00:00:00`,
       endTime: event.end?.dateTime ?? `${event.end?.date ?? event.start?.date}T23:59:59`,
     }))
+}
+
+async function fetchGoogleCalendarEvents(accessToken?: string | null): Promise<CalendarEvent[]> {
+  if (!accessToken) return []
+
+  const calendarIdsToFetch = CALENDAR_IDS.length > 0 ? CALENDAR_IDS : ['primary']
+
+  const results = await Promise.all(
+    calendarIdsToFetch.map((calendarId) => fetchEventsForCalendar(accessToken, calendarId)),
+  )
+
+  return results
+    .flat()
+    .sort((a, b) => +new Date(a.startTime) - +new Date(b.startTime))
 }
 
 export function useGoogleCalendar() {
@@ -157,6 +218,7 @@ export function useGoogleCalendar() {
 
   const syncCalendar = useCallback(async () => {
     setIsLoading(true)
+
     try {
       const {
         data: { session },
@@ -169,30 +231,46 @@ export function useGoogleCalendar() {
       }
 
       const { data: contacts } = await supabase.from('contacts').select('id,email,color,initials')
+
       const { data: manualAssignments } = await supabase
         .from('calendar_manual_assignments')
         .select('event_id,contact_id')
 
       const events = await fetchGoogleCalendarEvents(session.provider_token)
       const enriched = enrichCalendarEventsWithContacts(events, contacts ?? [], manualAssignments ?? [])
+
       setCalendarEvents(events)
       setEnrichedCalendarEvents(enriched)
       setLastSynced(new Date().toISOString())
 
-      // Build suggestion queue from unknown attendees.
-      const existing = new Set((contacts ?? []).flatMap((c) => (c.email ? [c.email.toLowerCase()] : [])))
+      const existing = new Set(
+        (contacts ?? []).flatMap((contact) =>
+          contact.email ? [contact.email.toLowerCase()] : [],
+        ),
+      )
+
       const queue = readSuggestions()
       const now = Date.now()
+
       const unknowns = enriched.flatMap((event) =>
         (event.attendees ?? [])
           .map((attendee) => attendee.email?.toLowerCase())
           .filter((email): email is string => Boolean(email) && !existing.has(email)),
       )
+
       const merged = [...queue]
+
       for (const email of unknowns) {
-        const present = merged.find((item) => item.email === email && !item.dismissed && (!item.snoozeUntil || item.snoozeUntil < now))
+        const present = merged.find(
+          (item) =>
+            item.email === email &&
+            !item.dismissed &&
+            (!item.snoozeUntil || item.snoozeUntil < now),
+        )
+
         if (!present) merged.push({ email })
       }
+
       writeSuggestions(merged)
     } finally {
       setIsLoading(false)
