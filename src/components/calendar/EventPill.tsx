@@ -12,14 +12,19 @@ function colorForEvent(event: CalendarItem) {
   return 'var(--meeting)'
 }
 
+function timeLabel(iso: string) {
+  return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+}
+
 export function EventPill({ event }: { event: CalendarItem }) {
   return (
     <div
-      className="truncate rounded-full px-2 py-1 text-xs text-white"
+      className="mb-1 flex max-w-full items-center gap-1.5 truncate rounded px-1.5 py-1 text-[10px] leading-none text-white"
       style={{ backgroundColor: colorForEvent(event) }}
       title={event.title}
     >
-      {event.title}
+      <span className="truncate">{event.title}</span>
+      <span className="hidden opacity-80 xl:inline">{timeLabel(event.startTime)}</span>
     </div>
   )
 }

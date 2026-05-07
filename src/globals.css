@@ -8,7 +8,11 @@
   --text: #2c2c2a;
   --muted: #888780;
   --border: rgba(44, 44, 42, 0.11);
+
+  /* Brand */
   --jamie: #6b2358;
+
+  /* Page colors */
   --meeting: #6484a1;
   --tasks: #c198ad;
   --content: #e2b7be;
@@ -20,6 +24,8 @@
   --pt: #bcd1d5;
   --medical: #c9888e;
   --virtual: #d4a77a;
+
+  /* Task status */
   --todo: #d6a0a9;
   --inprog: #e4b9ab;
   --await: #e1d6cb;

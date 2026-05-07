@@ -100,6 +100,55 @@ export function findNextCalendarEvent(contactId: string, contactEmail: string | 
   return priority2[0] ?? null
 }
 
+
+async function fetchGoogleCalendarEvents(accessToken?: string | null): Promise<CalendarEvent[]> {
+  if (!accessToken) return []
+
+  const now = new Date()
+  const timeMax = new Date()
+  timeMax.setDate(now.getDate() + 60)
+
+  const params = new URLSearchParams({
+    timeMin: now.toISOString(),
+    timeMax: timeMax.toISOString(),
+    singleEvents: 'true',
+    orderBy: 'startTime',
+    maxResults: '100',
+  })
+
+  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${params.toString()}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+
+  if (!response.ok) {
+    console.warn('Google Calendar fetch failed', await response.text())
+    return []
+  }
+
+  const data = (await response.json()) as {
+    items?: Array<{
+      id: string
+      summary?: string
+      start?: { dateTime?: string; date?: string }
+      end?: { dateTime?: string; date?: string }
+      attendees?: { email?: string }[]
+    }>
+  }
+
+  return (data.items ?? [])
+    .filter((event) => event.start?.dateTime || event.start?.date)
+    .map((event) => ({
+      id: event.id,
+      title: event.summary || 'Untitled event',
+      calendarId: 'primary',
+      attendees: event.attendees ?? [],
+      startTime: event.start?.dateTime ?? `${event.start?.date}T00:00:00`,
+      endTime: event.end?.dateTime ?? `${event.end?.date ?? event.start?.date}T23:59:59`,
+    }))
+}
+
 export function useGoogleCalendar() {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
   const [enrichedCalendarEvents, setEnrichedCalendarEvents] = useState<EnrichedEvent[]>([])
@@ -124,8 +173,7 @@ export function useGoogleCalendar() {
         .from('calendar_manual_assignments')
         .select('event_id,contact_id')
 
-      // Placeholder source until the calendar-sync function is wired.
-      const events: CalendarEvent[] = []
+      const events = await fetchGoogleCalendarEvents(session.provider_token)
       const enriched = enrichCalendarEventsWithContacts(events, contacts ?? [], manualAssignments ?? [])
       setCalendarEvents(events)
       setEnrichedCalendarEvents(enriched)

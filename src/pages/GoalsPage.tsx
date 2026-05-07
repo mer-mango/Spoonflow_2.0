@@ -10,43 +10,17 @@ export function GoalsPage() {
   const [openNewGoal, setOpenNewGoal] = useState(false)
 
   return (
-    <section className="space-y-4">
-      <header className="flex items-center justify-between rounded-2xl bg-white p-4">
-        <h1 className="text-2xl">Goals</h1>
-        <button
-          type="button"
-          className="rounded-lg bg-[var(--jamie)] px-4 py-2 text-white"
-          onClick={() => setOpenNewGoal(true)}
-        >
-          + New Goal
-        </button>
+    <section className="overflow-hidden rounded-xl border-[0.5px] border-[var(--border)] bg-[var(--bg)]">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b-[0.5px] border-[var(--border)] bg-white px-5 py-4">
+        <div><h1 className="font-serif text-[22px] font-medium tracking-[-0.4px]">Goals</h1><p className="mt-0.5 text-[11px] text-[var(--muted)]">A horizontal bulletin board for strategic goals and progress notes.</p></div>
+        <button type="button" className="rounded-full bg-[var(--goals)] px-4 py-2 text-[11.5px] font-medium text-white" onClick={() => setOpenNewGoal(true)}>+ New Goal</button>
       </header>
-
-      {isLoading ? (
-        <div className="rounded-2xl bg-white p-4 text-sm text-[var(--muted)]">Loading goals...</div>
-      ) : (
-        <GoalBoard
-          goals={goals}
-          entries={journalEntries}
-          onCycleStatus={async (goal: Goal) => {
-            await updateGoal(goal.id, { status: goal.status })
-            notify('Goal status updated')
-          }}
-          onAddJournal={async (goalId, text) => {
-            await addJournalEntry(goalId, text)
-            notify('Journal entry added')
-          }}
-        />
-      )}
-
-      <GoalModal
-        open={openNewGoal}
-        onClose={() => setOpenNewGoal(false)}
-        onCreate={async (payload) => {
-          await createGoal(payload)
-          notify('Goal created')
-        }}
-      />
+      <div className="flex flex-wrap items-center gap-2 border-b-[0.5px] border-[var(--border)] bg-[var(--bg)] px-5 py-3">
+        {(['All','Active','Completed','Archived'] as const).map((filter) => <button key={filter} type="button" className="rounded-full border-[0.5px] border-[var(--border)] bg-white px-3 py-1.5 text-[11.5px] text-[var(--muted)] hover:border-[var(--goals)] hover:text-[var(--goals)]">{filter}</button>)}
+        <span className="ml-auto text-[11px] text-[var(--muted)]">{goals.length} goals</span>
+      </div>
+      <div className="p-4">{isLoading ? <p className="text-[12px] text-[var(--muted)]">Loading goals…</p> : <GoalBoard goals={goals} entries={journalEntries} onCycleStatus={async (goal: Goal) => { await updateGoal(goal.id, { status: goal.status }); notify('Goal status updated') }} onAddJournal={async (goalId, text) => { await addJournalEntry(goalId, text); notify('Journal entry added') }} />}</div>
+      <GoalModal open={openNewGoal} onClose={() => setOpenNewGoal(false)} onCreate={async (payload) => { await createGoal(payload); notify('Goal created') }} />
     </section>
   )
 }

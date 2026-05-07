@@ -6,7 +6,7 @@ function monthDayKey(iso: string) {
 }
 
 function timeLabel(iso: string) {
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 }
 
 export function ListView({ events }: { events: CalendarItem[] }) {
@@ -18,23 +18,26 @@ export function ListView({ events }: { events: CalendarItem[] }) {
   }
 
   return (
-    <div className="space-y-4 rounded-2xl bg-white p-4">
-      {Array.from(groups.entries()).map(([dateKey, dayEvents]) => (
-        <section key={dateKey}>
-          <h3 className="mb-2 text-sm text-[var(--muted)]">{new Date(dateKey).toDateString()}</h3>
-          <div className="space-y-2">
-            {dayEvents.map((event) => (
-              <article key={event.id} className="rounded-xl border border-[var(--border)] p-3">
-                <p className="font-medium">{event.title}</p>
-                <p className="text-xs text-[var(--muted)]">
-                  {timeLabel(event.startTime)} - {timeLabel(event.endTime)}
-                </p>
-              </article>
-            ))}
-          </div>
-        </section>
-      ))}
-      {events.length === 0 && <p className="text-sm text-[var(--muted)]">No events yet.</p>}
+    <div className="flex-1 overflow-y-auto p-4">
+      <div className="space-y-4">
+        {Array.from(groups.entries()).map(([dateKey, dayEvents]) => (
+          <section key={dateKey} className="rounded-[10px] border-[0.5px] border-[var(--border)] bg-white p-4">
+            <h3 className="mb-3 font-serif text-[16px] font-medium">{new Date(dateKey).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</h3>
+            <div className="space-y-2">
+              {dayEvents.map((event) => (
+                <article key={event.id} className="flex items-start gap-3 rounded-[9px] border-[0.5px] border-[var(--border)] p-3">
+                  <div className="mt-1 h-2 w-2 rounded-full bg-[var(--meeting)]" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-medium">{event.title}</p>
+                    <p className="mt-1 text-[11px] text-[var(--muted)]">{timeLabel(event.startTime)} – {timeLabel(event.endTime)}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ))}
+        {events.length === 0 && <p className="rounded-[10px] border-[0.5px] border-dashed border-[var(--border)] bg-white p-5 text-center text-[12px] text-[var(--muted)]">No events yet.</p>}
+      </div>
     </div>
   )
 }

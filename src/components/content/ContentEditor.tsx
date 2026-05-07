@@ -1,13 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { EditorToolbar } from './EditorToolbar'
 
-export function ContentEditor({
-  initialBody,
-  onBodyChange,
-}: {
-  initialBody: string
-  onBodyChange: (html: string, plainText: string) => void
-}) {
+export function ContentEditor({ initialBody, onBodyChange }: { initialBody: string; onBodyChange: (html: string, plainText: string) => void }) {
   const ref = useRef<HTMLDivElement | null>(null)
   const [wordCount, setWordCount] = useState(0)
 
@@ -29,26 +23,24 @@ export function ContentEditor({
   }
 
   const format = (command: string, value?: string) => {
+    if (command === 'createLink' && !value) return
     document.execCommand(command, false, value)
     handleInput()
   }
 
-  const editorClass = useMemo(
-    () =>
-      'mx-auto min-h-[420px] w-full max-w-[700px] rounded-2xl border border-[var(--border)] bg-white px-8 py-10 text-sm leading-8 outline-none',
-    [],
-  )
-
   return (
-    <div>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
       <EditorToolbar onFormat={format} wordCount={wordCount} />
-      <div
-        ref={ref}
-        contentEditable
-        suppressContentEditableWarning
-        className={editorClass}
-        onInput={handleInput}
-      />
+      <div className="flex-1 overflow-y-auto bg-white">
+        <div
+          ref={ref}
+          contentEditable
+          suppressContentEditableWarning
+          className="mx-auto min-h-full max-w-[700px] px-10 py-8 text-[14px] leading-[1.8] text-[var(--text)] outline-none empty:before:pointer-events-none empty:before:text-[#c8c5c0] empty:before:content-[attr(data-placeholder)]"
+          data-placeholder="Start writing here…"
+          onInput={handleInput}
+        />
+      </div>
     </div>
   )
 }
