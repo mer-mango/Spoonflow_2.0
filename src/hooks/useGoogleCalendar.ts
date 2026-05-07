@@ -10,6 +10,8 @@ const COMMON_GROUNDS_CALENDAR_ID = import.meta.env.VITE_GOOGLE_COMMON_GROUNDS_CA
 const TYT_2026_SPRING_CALENDAR_ID = import.meta.env.VITE_GOOGLE_TYT_2026_SPRING_CALENDAR_ID || ''
 const MEREDITH_MANGOLD_CALENDAR_ID = import.meta.env.VITE_GOOGLE_MEREDITH_MANGOLD_CALENDAR_ID || ''
 
+const GOOGLE_PROVIDER_TOKEN_KEY = 'spoonflow_google_provider_token'
+
 const CALENDAR_IDS = Array.from(
   new Set(
     [
@@ -112,6 +114,14 @@ function getCalendarColor(calendarId: string) {
 
 function getCalendarLabel(calendarId: string) {
   return CALENDAR_LABELS[calendarId] || 'Calendar'
+}
+
+function getSavedGoogleProviderToken() {
+  return localStorage.getItem(GOOGLE_PROVIDER_TOKEN_KEY)
+}
+
+function saveGoogleProviderToken(token: string) {
+  localStorage.setItem(GOOGLE_PROVIDER_TOKEN_KEY, token)
 }
 
 export function enrichCalendarEventsWithContacts(
@@ -246,9 +256,14 @@ async function fetchEventsForCalendar(
 }
 
 async function fetchGoogleCalendarEvents(accessToken?: string | null): Promise<CalendarEvent[]> {
-  if (!accessToken) return []
+  if (!accessToken) {
+    console.warn('Google Calendar sync skipped: no provider token available.')
+    return []
+  }
 
   const calendarIdsToFetch = CALENDAR_IDS.length > 0 ? CALENDAR_IDS : ['primary']
+
+  console.info('Fetching Google calendars:', calendarIdsToFetch)
 
   const results = await Promise.all(
     calendarIdsToFetch.map((calendarId) => fetchEventsForCalendar(accessToken, calendarId)),
@@ -273,7 +288,16 @@ export function useGoogleCalendar() {
         data: { session },
       } = await supabase.auth.getSession()
 
-      if (!session) {
+      const liveProviderToken = session?.provider_token ?? null
+
+      if (liveProviderToken) {
+        saveGoogleProviderToken(liveProviderToken)
+      }
+
+      const googleProviderToken = liveProviderToken || getSavedGoogleProviderToken()
+
+      if (!googleProviderToken) {
+        console.warn('No Google provider token found. Reconnect Google Calendar from Settings → Integrations.')
         setCalendarEvents([])
         setEnrichedCalendarEvents([])
         return
@@ -285,7 +309,7 @@ export function useGoogleCalendar() {
         .from('calendar_manual_assignments')
         .select('event_id,contact_id')
 
-      const events = await fetchGoogleCalendarEvents(session.provider_token)
+      const events = await fetchGoogleCalendarEvents(googleProviderToken)
       const enriched = enrichCalendarEventsWithContacts(events, contacts ?? [], manualAssignments ?? [])
 
       setCalendarEvents(events)
