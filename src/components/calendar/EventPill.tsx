@@ -4,27 +4,31 @@ export type CalendarItem = {
   startTime: string
   endTime: string
   calendarId?: string
-}
-
-function colorForEvent(event: CalendarItem) {
-  if (event.calendarId === 'MEDICAL_APPTS_CALENDAR_ID') return 'var(--medical)'
-  if (event.calendarId === 'VIRTUAL_APPTS_CALENDAR_ID') return 'var(--virtual)'
-  return 'var(--meeting)'
+  calendarLabel?: string
+  color?: string
 }
 
 function timeLabel(iso: string) {
-  return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+  return new Date(iso).toLocaleTimeString([], {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
 }
 
 export function EventPill({ event }: { event: CalendarItem }) {
+  const color = event.color ?? '#6484a1'
+
   return (
     <div
-      className="mb-1 flex max-w-full items-center gap-1.5 truncate rounded px-1.5 py-1 text-[10px] leading-none text-white"
-      style={{ backgroundColor: colorForEvent(event) }}
-      title={event.title}
+      className="truncate rounded-md px-2 py-1 text-[10.5px] font-medium leading-tight"
+      style={{
+        backgroundColor: `${color}22`,
+        color,
+      }}
+      title={`${event.title}${event.calendarLabel ? ` · ${event.calendarLabel}` : ''}`}
     >
-      <span className="truncate">{event.title}</span>
-      <span className="hidden opacity-80 xl:inline">{timeLabel(event.startTime)}</span>
+      <span className="font-semibold">{timeLabel(event.startTime)}</span>{' '}
+      {event.title}
     </div>
   )
 }
