@@ -23,9 +23,9 @@ function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/today" />} />
             <Route path="/today" element={<TodayPage />} />
-            <Route path="/contacts" element={<ContactsPage />} />
-            <Route path="/contacts/:id" element={<ContactsPage />} />
-            <Route path="/contacts/new" element={<ContactsPage />} />
+           <Route path="/contacts" element={<ContactsPage />} />
+<Route path="/contacts/new" element={<ContactsPage />} />
+<Route path="/contacts/:id" element={<ContactsPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/content" element={<ContentPage />} />
