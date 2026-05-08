@@ -369,6 +369,18 @@ export function ContactModal({ open, contact, onClose, onCreate, onUpdate }: Pro
               </section>
 
               <section>
+                <SectionHeader>About</SectionHeader>
+
+                <Textarea
+                  label="Brief description"
+                  value={about}
+                  onChange={setAbout}
+                  placeholder="What should you remember about this person?"
+                  rows={4}
+                />
+              </section>
+
+              <section>
                 <SectionHeader>Contact info</SectionHeader>
 
                 <div className="grid gap-3 rounded-xl border border-[var(--border)] bg-white p-4 md:grid-cols-2">
@@ -412,18 +424,6 @@ export function ContactModal({ open, contact, onClose, onCreate, onUpdate }: Pro
                     placeholder="State"
                   />
                 </div>
-              </section>
-
-              <section>
-                <SectionHeader>About</SectionHeader>
-
-                <Textarea
-                  label="Brief description"
-                  value={about}
-                  onChange={setAbout}
-                  placeholder="What should you remember about this person?"
-                  rows={4}
-                />
               </section>
             </div>
           )}
