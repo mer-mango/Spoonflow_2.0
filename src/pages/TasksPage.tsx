@@ -15,6 +15,7 @@ function blankTask(): Task {
     due_date: null,
     estimated_minutes: 30,
     starred: false,
+    archived: false,
     contact_id: null,
     goal_id: null,
   }
