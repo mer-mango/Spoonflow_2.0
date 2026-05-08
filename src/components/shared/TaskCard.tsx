@@ -1,16 +1,13 @@
 import { Badge } from './Badge'
 import type { Task } from '../../hooks/useTasks'
-import { useContacts } from '../../hooks/useContacts'
 
 type TaskCardProps = {
   task: Task
+  contactName?: string | null
   onToggle: (task: Task) => void
   onEdit: (task: Task) => void
-  onArchive?: (task: Task) => void
-  onDelete?: (task: Task) => void
-  onStar?: (task: Task) => void
-  showContact?: boolean
-  showGoal?: boolean
+  onArchive: (task: Task) => void
+  onStar: (task: Task) => void
 }
 
 const taskTypeLabels: Record<string, string> = {
@@ -42,6 +39,7 @@ function dateBoxParts(date: string | null) {
       day: 'NO',
       date: 'DATE',
       overdue: false,
+      hasDate: false,
     }
   }
 
@@ -49,12 +47,11 @@ function dateBoxParts(date: string | null) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  const overdue = parsed.getTime() < today.getTime()
-
   return {
     day: parsed.toLocaleDateString([], { weekday: 'short' }).toUpperCase(),
     date: `${parsed.getMonth() + 1}/${parsed.getDate()}`,
-    overdue,
+    overdue: parsed.getTime() < today.getTime(),
+    hasDate: true,
   }
 }
 
@@ -93,20 +90,32 @@ function ArchiveIcon() {
   )
 }
 
+function ContactIcon() {
+  return (
+    <svg
+      viewBox="0 0 10 10"
+      className="h-2.5 w-2.5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      aria-hidden="true"
+    >
+      <circle cx="5" cy="3.5" r="1.7" />
+      <path d="M1.5 9c0-2 1.5-3.2 3.5-3.2S8.5 7 8.5 9" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export function TaskCard({
   task,
+  contactName,
   onToggle,
   onEdit,
   onArchive,
-  onDelete,
   onStar,
 }: TaskCardProps) {
-  const { contacts } = useContacts()
   const done = task.status === 'done'
   const dateParts = dateBoxParts(task.due_date)
-  const linkedContact = task.contact_id
-    ? contacts.find((contact) => contact.id === task.contact_id)
-    : null
 
   return (
     <article
@@ -117,8 +126,12 @@ export function TaskCard({
     >
       <div
         className={`flex min-h-[76px] flex-col items-center justify-center px-1 text-center text-white ${
-          dateParts.overdue ? 'bg-[#c9888e]' : 'bg-[var(--tasks)]'
-        } ${!task.due_date ? 'bg-[#d8d5cf]' : ''}`}
+          !dateParts.hasDate
+            ? 'bg-[#d8d5cf]'
+            : dateParts.overdue
+              ? 'bg-[#c9888e]'
+              : 'bg-[var(--tasks)]'
+        }`}
       >
         <span className="text-[9px] font-semibold uppercase leading-none tracking-[0.08em]">
           {dateParts.day}
@@ -166,7 +179,7 @@ export function TaskCard({
                 }`}
                 onClick={(event) => {
                   event.stopPropagation()
-                  onStar?.(task)
+                  onStar(task)
                 }}
               >
                 {task.starred ? '★' : '☆'}
@@ -182,19 +195,10 @@ export function TaskCard({
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <Badge label={statusLabel(task.status)} variant={statusVariant(task.status)} />
 
-              {linkedContact && (
+              {contactName && (
                 <span className="inline-flex items-center gap-1 rounded bg-[rgba(139,165,168,0.16)] px-2 py-1 text-[10.5px] font-medium text-[#6f8f92]">
-                  <svg
-                    viewBox="0 0 10 10"
-                    className="h-2.5 w-2.5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.2"
-                  >
-                    <circle cx="5" cy="3.5" r="1.7" />
-                    <path d="M1.5 9c0-2 1.5-3.2 3.5-3.2S8.5 7 8.5 9" strokeLinecap="round" />
-                  </svg>
-                  {linkedContact.name}
+                  <ContactIcon />
+                  {contactName}
                 </span>
               )}
 
@@ -229,13 +233,7 @@ export function TaskCard({
         className="flex items-center px-3 text-[#bbb6ad] opacity-80 transition hover:text-[var(--tasks)]"
         onClick={(event) => {
           event.stopPropagation()
-
-          if (onArchive) {
-            onArchive(task)
-            return
-          }
-
-          onDelete?.(task)
+          onArchive(task)
         }}
         aria-label="Archive task"
         title="Archive task"
