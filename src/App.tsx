@@ -18,25 +18,37 @@ function App() {
     <ToastProvider>
       <div className="flex min-h-screen bg-[var(--bg)]">
         <Sidebar />
+
         <main className="w-full p-4 pb-24 lg:p-8">
           <TopBar />
+
           <Routes>
             <Route path="/" element={<Navigate to="/today" />} />
+
             <Route path="/today" element={<TodayPage />} />
-           <Route path="/contacts" element={<ContactsPage />} />
-<Route path="/contacts/new" element={<ContactsPage />} />
-<Route path="/contacts/:id" element={<ContactsPage />} />
+
+            <Route path="/contacts" element={<ContactsPage />} />
+            <Route path="/contacts/new" element={<ContactsPage />} />
+            <Route path="/contacts/:id" element={<ContactsPage />} />
+
             <Route path="/calendar" element={<CalendarPage />} />
+
             <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/tasks/new" element={<TasksPage />} />
+            <Route path="/tasks/:id" element={<TasksPage />} />
+
             <Route path="/content" element={<ContentPage />} />
-            <Route path="/content/:id" element={<ContentEditorPage />} />
             <Route path="/content/new" element={<ContentEditorPage />} />
+            <Route path="/content/:id" element={<ContentEditorPage />} />
+
             <Route path="/nurture" element={<NurturePage />} />
             <Route path="/goals" element={<GoalsPage />} />
+
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/:section" element={<SettingsPage />} />
           </Routes>
         </main>
+
         <MobileNav />
       </div>
     </ToastProvider>
