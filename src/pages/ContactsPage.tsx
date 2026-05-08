@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useContacts, type Contact } from '../hooks/useContacts'
 import { ContactModal } from '../components/contacts/ContactModal'
 import { useToast } from '../components/shared/Toast'
@@ -81,6 +81,7 @@ function exportContactsCsv(contacts: Contact[]) {
 export function ContactsPage() {
   const navigate = useNavigate()
   const params = useParams()
+  const location = useLocation()
 
   const { contacts, isLoading, createContact, updateContact, importContactsCsv } = useContacts()
   const { tasks } = useTasks()
@@ -94,7 +95,9 @@ export function ContactsPage() {
   const [importMessage, setImportMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    if (params.id === 'new') {
+    const isNewContactRoute = location.pathname === '/contacts/new'
+
+    if (isNewContactRoute) {
       setSelected(null)
       setModalOpen(true)
       return
@@ -106,9 +109,15 @@ export function ContactsPage() {
       if (match) {
         setSelected(match)
         setModalOpen(true)
+        return
       }
     }
-  }, [params.id, contacts])
+
+    if (location.pathname === '/contacts') {
+      setSelected(null)
+      setModalOpen(false)
+    }
+  }, [location.pathname, params.id, contacts])
 
   const taskCountByContactId = useMemo(() => {
     const counts = new Map<string, number>()
@@ -146,7 +155,7 @@ export function ContactsPage() {
     setModalOpen(false)
     setSelected(null)
 
-    if (params.id) {
+    if (location.pathname.startsWith('/contacts/')) {
       navigate('/contacts')
     }
   }
@@ -230,6 +239,8 @@ export function ContactsPage() {
               type="button"
               className="rounded-full bg-[var(--jamie)] px-4 py-2 text-sm font-medium text-white shadow-sm"
               onClick={() => {
+                setSelected(null)
+                setModalOpen(true)
                 navigate('/contacts/new')
               }}
             >
