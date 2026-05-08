@@ -33,8 +33,6 @@ export function ContactModal({ open, contact, onClose }: Props) {
               <span className="text-[var(--muted)]">Email:</span> {contact.email || '—'}
             </p>
             <p>
-              <span className="text-[var(--muted)]">Stage:</span> {contact.stage || '—'}
-            </p>
           </div>
         </section>
         <section className="rounded-xl border border-[var(--border)] p-3">
