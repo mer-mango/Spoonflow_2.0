@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useContacts, type Contact } from '../hooks/useContacts'
 import { ContactModal } from '../components/contacts/ContactModal'
 import { useToast } from '../components/shared/Toast'
@@ -78,6 +79,9 @@ function exportContactsCsv(contacts: Contact[]) {
 }
 
 export function ContactsPage() {
+  const navigate = useNavigate()
+  const params = useParams()
+
   const { contacts, isLoading, createContact, updateContact, importContactsCsv } = useContacts()
   const { tasks } = useTasks()
   const { notify } = useToast()
@@ -88,6 +92,23 @@ export function ContactsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [importMessage, setImportMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (params.id === 'new') {
+      setSelected(null)
+      setModalOpen(true)
+      return
+    }
+
+    if (params.id && contacts.length > 0) {
+      const match = contacts.find((contact) => contact.id === params.id)
+
+      if (match) {
+        setSelected(match)
+        setModalOpen(true)
+      }
+    }
+  }, [params.id, contacts])
 
   const taskCountByContactId = useMemo(() => {
     const counts = new Map<string, number>()
@@ -120,6 +141,15 @@ export function ContactsPage() {
         }),
     [contacts, query],
   )
+
+  const closeContactModal = () => {
+    setModalOpen(false)
+    setSelected(null)
+
+    if (params.id) {
+      navigate('/contacts')
+    }
+  }
 
   const handleImportCsv = async (file?: File | null) => {
     if (!file) return
@@ -200,8 +230,7 @@ export function ContactsPage() {
               type="button"
               className="rounded-full bg-[var(--jamie)] px-4 py-2 text-sm font-medium text-white shadow-sm"
               onClick={() => {
-                setSelected(null)
-                setModalOpen(true)
+                navigate('/contacts/new')
               }}
             >
               + New Contact
@@ -260,23 +289,27 @@ export function ContactsPage() {
                         key={contact.id}
                         className="cursor-pointer border-b border-[rgba(44,44,42,0.06)] transition hover:bg-[#faf9f8]"
                         onClick={() => {
-                          setSelected(contact)
-                          setModalOpen(true)
+                          navigate(`/contacts/${contact.id}`)
                         }}
                       >
                         <td className="px-3 py-3 align-middle">
                           <button
                             type="button"
                             className={`flex h-6 w-6 items-center justify-center text-base transition ${
-                              contact.starred ? 'text-[#d8a923]' : 'text-[#d8d5cf] hover:text-[#b8b3aa]'
+                              contact.starred
+                                ? 'text-[#d8a923]'
+                                : 'text-[#d8d5cf] hover:text-[#b8b3aa]'
                             }`}
                             onClick={async (event) => {
                               event.stopPropagation()
+
                               const { error } = await updateContact(contact.id, {
                                 starred: !contact.starred,
                               })
 
-                              if (!error) notify(contact.starred ? 'Contact unstarred' : 'Contact starred')
+                              if (!error) {
+                                notify(contact.starred ? 'Contact unstarred' : 'Contact starred')
+                              }
                             }}
                             aria-label={contact.starred ? 'Unstar contact' : 'Star contact'}
                           >
@@ -291,14 +324,20 @@ export function ContactsPage() {
                               style={{ backgroundColor: contact.color ?? '#8ba5a8' }}
                             >
                               {contact.image_url ? (
-                                <img src={contact.image_url} alt="" className="h-full w-full object-cover" />
+                                <img
+                                  src={contact.image_url}
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                />
                               ) : (
                                 contact.initials || initials(contact.name)
                               )}
                             </span>
 
                             <div className="min-w-0">
-                              <p className="truncate font-semibold text-[var(--text)]">{contact.name}</p>
+                              <p className="truncate font-semibold text-[var(--text)]">
+                                {contact.name}
+                              </p>
                               <p className="truncate text-xs text-[var(--muted)]">
                                 {[contact.role, contact.company].filter(Boolean).join(' · ') || '—'}
                               </p>
@@ -353,7 +392,9 @@ export function ContactsPage() {
                             >
                               <span
                                 className="h-1.5 w-1.5 rounded-full"
-                                style={{ backgroundColor: nurtureOverdue ? '#c9888e' : '#8fa790' }}
+                                style={{
+                                  backgroundColor: nurtureOverdue ? '#c9888e' : '#8fa790',
+                                }}
                               />
                               {nurtureOverdue ? 'overdue' : formatDate(contact.next_nurture_date)}
                             </span>
@@ -377,8 +418,7 @@ export function ContactsPage() {
                   key={contact.id}
                   className="rounded-xl border border-[var(--border)] bg-white p-3 text-left"
                   onClick={() => {
-                    setSelected(contact)
-                    setModalOpen(true)
+                    navigate(`/contacts/${contact.id}`)
                   }}
                 >
                   <p className="font-medium">{contact.name}</p>
@@ -395,10 +435,7 @@ export function ContactsPage() {
       <ContactModal
         open={modalOpen}
         contact={selected}
-        onClose={() => {
-          setModalOpen(false)
-          setSelected(null)
-        }}
+        onClose={closeContactModal}
         onCreate={createContact}
         onUpdate={updateContact}
       />
