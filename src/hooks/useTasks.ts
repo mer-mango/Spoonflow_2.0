@@ -111,10 +111,7 @@ function sortTasks(tasks: Task[]) {
 
     if (a.starred !== b.starred) return a.starred ? -1 : 1
 
-    if (a.due_date && b.due_date) {
-      return a.due_date.localeCompare(b.due_date)
-    }
-
+    if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date)
     if (a.due_date && !b.due_date) return -1
     if (!a.due_date && b.due_date) return 1
 
@@ -170,9 +167,23 @@ export function useTasks() {
   }, [loadTasks])
 
   const createTask = useCallback(async (payload: TaskInput) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return {
+        data: null,
+        error: new Error('You must be signed in to create tasks.'),
+      }
+    }
+
     const { data, error } = await supabase
       .from('tasks')
-      .insert(prepareTaskInsert(payload))
+      .insert({
+        ...prepareTaskInsert(payload),
+        user_id: user.id,
+      })
       .select(TASK_SELECT)
       .single()
 
