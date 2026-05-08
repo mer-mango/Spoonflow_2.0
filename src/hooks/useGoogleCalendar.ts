@@ -206,15 +206,22 @@ async function fetchEventsForCalendar(
   calendarId: string,
 ): Promise<CalendarEvent[]> {
   const now = new Date()
-  const timeMax = new Date()
+
+  // Important: start at the beginning of the local day so Today still shows
+  // earlier meetings after they have already passed.
+  const timeMin = new Date(now)
+  timeMin.setHours(0, 0, 0, 0)
+
+  const timeMax = new Date(now)
   timeMax.setDate(now.getDate() + 60)
+  timeMax.setHours(23, 59, 59, 999)
 
   const params = new URLSearchParams({
-    timeMin: now.toISOString(),
+    timeMin: timeMin.toISOString(),
     timeMax: timeMax.toISOString(),
     singleEvents: 'true',
     orderBy: 'startTime',
-    maxResults: '100',
+    maxResults: '250',
   })
 
   const response = await fetch(
@@ -297,7 +304,10 @@ export function useGoogleCalendar() {
       const googleProviderToken = liveProviderToken || getSavedGoogleProviderToken()
 
       if (!googleProviderToken) {
-        console.warn('No Google provider token found. Reconnect Google Calendar from Settings → Integrations.')
+        console.warn(
+          'No Google provider token found. Reconnect Google Calendar from Settings → Integrations.',
+        )
+
         setCalendarEvents([])
         setEnrichedCalendarEvents([])
         return
@@ -310,7 +320,11 @@ export function useGoogleCalendar() {
         .select('event_id,contact_id')
 
       const events = await fetchGoogleCalendarEvents(googleProviderToken)
-      const enriched = enrichCalendarEventsWithContacts(events, contacts ?? [], manualAssignments ?? [])
+      const enriched = enrichCalendarEventsWithContacts(
+        events,
+        contacts ?? [],
+        manualAssignments ?? [],
+      )
 
       setCalendarEvents(events)
       setEnrichedCalendarEvents(enriched)
@@ -355,7 +369,13 @@ export function useGoogleCalendar() {
   }, [syncCalendar])
 
   const value = useMemo(
-    () => ({ calendarEvents, enrichedCalendarEvents, syncCalendar, lastSynced, isLoading }),
+    () => ({
+      calendarEvents,
+      enrichedCalendarEvents,
+      syncCalendar,
+      lastSynced,
+      isLoading,
+    }),
     [calendarEvents, enrichedCalendarEvents, syncCalendar, lastSynced, isLoading],
   )
 
