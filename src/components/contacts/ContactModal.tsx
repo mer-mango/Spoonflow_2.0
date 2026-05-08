@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Modal } from '../shared/Modal'
 import type { Contact, ContactUpdateInput } from '../../hooks/useContacts'
 import { useTasks } from '../../hooks/useTasks'
@@ -68,11 +68,22 @@ function text(value?: string | null) {
   return value ?? ''
 }
 
-function InfoLabel({ children }: { children: React.ReactNode }) {
+function FieldLabel({ children }: { children: ReactNode }) {
   return (
     <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
       {children}
     </label>
+  )
+}
+
+function SectionHeader({ children }: { children: ReactNode }) {
+  return (
+    <div className="mb-2 flex items-center gap-2">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6d8c90]">
+        {children}
+      </p>
+      <div className="h-px flex-1 bg-[rgba(109,140,144,0.22)]" />
+    </div>
   )
 }
 
@@ -91,7 +102,7 @@ function Input({
 }) {
   return (
     <div>
-      <InfoLabel>{label}</InfoLabel>
+      <FieldLabel>{label}</FieldLabel>
       <input
         type={type}
         value={value}
@@ -118,7 +129,7 @@ function Textarea({
 }) {
   return (
     <div>
-      <InfoLabel>{label}</InfoLabel>
+      <FieldLabel>{label}</FieldLabel>
       <textarea
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -182,7 +193,9 @@ export function ContactModal({ open, contact, onClose, onCreate, onUpdate }: Pro
     setFromNote(text(contact?.from_note))
     setAbout(text(contact?.about))
     setNotes(text(contact?.notes))
-    setNurtureFrequencyDays(contact?.nurture_frequency_days ? String(contact.nurture_frequency_days) : '')
+    setNurtureFrequencyDays(
+      contact?.nurture_frequency_days ? String(contact.nurture_frequency_days) : '',
+    )
     setNextNurtureDate(dateInputValue(contact?.next_nurture_date))
     setStarred(Boolean(contact?.starred))
   }, [open, contact])
@@ -217,9 +230,8 @@ export function ContactModal({ open, contact, onClose, onCreate, onUpdate }: Pro
     setErrorMessage(null)
 
     const payload = buildPayload()
-    const result = isNew || !contact
-      ? await onCreate(payload)
-      : await onUpdate(contact.id, payload)
+    const result =
+      isNew || !contact ? await onCreate(payload) : await onUpdate(contact.id, payload)
 
     setIsSaving(false)
 
@@ -240,7 +252,14 @@ export function ContactModal({ open, contact, onClose, onCreate, onUpdate }: Pro
   ]
 
   return (
-    <Modal open={open} onClose={onClose} title={isNew ? 'New Contact' : contact?.name ?? 'Contact'}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={isNew ? 'New Contact' : contact?.name ?? 'Contact'}
+      hideHeader
+      maxWidthClassName="max-w-4xl"
+      contentClassName="rounded-2xl shadow-2xl"
+    >
       <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-white">
         <div
           className="flex items-center gap-4 px-5 py-4 text-white"
@@ -267,6 +286,23 @@ export function ContactModal({ open, contact, onClose, onCreate, onUpdate }: Pro
             className="rounded-full bg-white/15 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/25"
           >
             {starred ? '★ Starred' : '☆ Star'}
+          </button>
+
+          <button
+            type="button"
+            aria-label="Close contact modal"
+            onClick={onClose}
+            className="rounded-full p-2 text-white/75 transition hover:bg-white/15 hover:text-white"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
           </button>
         </div>
 
@@ -302,58 +338,84 @@ export function ContactModal({ open, contact, onClose, onCreate, onUpdate }: Pro
           {activeTab === 'information' && (
             <div className="space-y-5">
               <section>
-                <div className="mb-2 flex items-center gap-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6d8c90]">
-                    Overview
-                  </p>
-                  <div className="h-px flex-1 bg-[rgba(109,140,144,0.22)]" />
-                </div>
+                <SectionHeader>Overview</SectionHeader>
 
                 <div className="grid gap-3 rounded-xl border border-[var(--border)] bg-white p-4 md:grid-cols-2">
-                  <Input label="Full name" value={name} onChange={setName} placeholder="Jane Smith" />
-                  <Input label="Role / Title" value={role} onChange={setRole} placeholder="Director of..." />
-                  <Input label="Company" value={company} onChange={setCompany} placeholder="Company" />
-                  <Input label="From / how you know them" value={fromNote} onChange={setFromNote} placeholder="Referral, LinkedIn, conference..." />
+                  <Input
+                    label="Full name"
+                    value={name}
+                    onChange={setName}
+                    placeholder="Jane Smith"
+                  />
+                  <Input
+                    label="Role / Title"
+                    value={role}
+                    onChange={setRole}
+                    placeholder="Director of..."
+                  />
+                  <Input
+                    label="Company"
+                    value={company}
+                    onChange={setCompany}
+                    placeholder="Company"
+                  />
+                  <Input
+                    label="From / how you know them"
+                    value={fromNote}
+                    onChange={setFromNote}
+                    placeholder="Referral, LinkedIn, conference..."
+                  />
                 </div>
               </section>
 
               <section>
-                <div className="mb-2 flex items-center gap-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6d8c90]">
-                    Contact info
-                  </p>
-                  <div className="h-px flex-1 bg-[rgba(109,140,144,0.22)]" />
-                </div>
+                <SectionHeader>Contact info</SectionHeader>
 
                 <div className="grid gap-3 rounded-xl border border-[var(--border)] bg-white p-4 md:grid-cols-2">
-                  <Input label="Email" value={email} onChange={setEmail} placeholder="jane@example.com" type="email" />
-                  <Input label="LinkedIn URL" value={linkedinUrl} onChange={setLinkedinUrl} placeholder="https://linkedin.com/in/..." />
-                  <Input label="Website" value={website} onChange={setWebsite} placeholder="https://..." />
-                  <Input label="Scheduling link" value={schedulingLink} onChange={setSchedulingLink} placeholder="https://calendly.com/..." />
+                  <Input
+                    label="Email"
+                    value={email}
+                    onChange={setEmail}
+                    placeholder="jane@example.com"
+                    type="email"
+                  />
+                  <Input
+                    label="LinkedIn URL"
+                    value={linkedinUrl}
+                    onChange={setLinkedinUrl}
+                    placeholder="https://linkedin.com/in/..."
+                  />
+                  <Input
+                    label="Website"
+                    value={website}
+                    onChange={setWebsite}
+                    placeholder="https://..."
+                  />
+                  <Input
+                    label="Scheduling link"
+                    value={schedulingLink}
+                    onChange={setSchedulingLink}
+                    placeholder="https://calendly.com/..."
+                  />
                 </div>
               </section>
 
               <section>
-                <div className="mb-2 flex items-center gap-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6d8c90]">
-                    Location
-                  </p>
-                  <div className="h-px flex-1 bg-[rgba(109,140,144,0.22)]" />
-                </div>
+                <SectionHeader>Location</SectionHeader>
 
                 <div className="grid gap-3 rounded-xl border border-[var(--border)] bg-white p-4 md:grid-cols-2">
                   <Input label="City" value={city} onChange={setCity} placeholder="City" />
-                  <Input label="State" value={stateValue} onChange={setStateValue} placeholder="State" />
+                  <Input
+                    label="State"
+                    value={stateValue}
+                    onChange={setStateValue}
+                    placeholder="State"
+                  />
                 </div>
               </section>
 
               <section>
-                <div className="mb-2 flex items-center gap-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6d8c90]">
-                    About
-                  </p>
-                  <div className="h-px flex-1 bg-[rgba(109,140,144,0.22)]" />
-                </div>
+                <SectionHeader>About</SectionHeader>
 
                 <Textarea
                   label="Brief description"
@@ -379,7 +441,9 @@ export function ContactModal({ open, contact, onClose, onCreate, onUpdate }: Pro
           {activeTab === 'notes' && (
             <div className="space-y-3">
               <div>
-                <p className="font-serif text-xl">Notes{displayName ? ` for ${displayName.split(' ')[0]}` : ''}</p>
+                <p className="font-serif text-xl">
+                  Notes{displayName ? ` for ${displayName.split(' ')[0]}` : ''}
+                </p>
                 <p className="mt-1 text-sm text-[var(--muted)]">
                   Freeform notes, context, and reminders for this contact.
                 </p>
@@ -450,7 +514,7 @@ export function ContactModal({ open, contact, onClose, onCreate, onUpdate }: Pro
 
                   <div className="grid gap-3 md:grid-cols-2">
                     <div>
-                      <InfoLabel>Frequency</InfoLabel>
+                      <FieldLabel>Frequency</FieldLabel>
                       <select
                         value={nurtureFrequencyDays}
                         onChange={(event) => setNurtureFrequencyDays(event.target.value)}
@@ -475,7 +539,8 @@ export function ContactModal({ open, contact, onClose, onCreate, onUpdate }: Pro
               </section>
 
               <div className="rounded-xl border border-dashed border-[rgba(143,167,144,0.35)] bg-[rgba(143,167,144,0.08)] p-5 text-sm text-[#6f8d70]">
-                Nurture reminders will show up on the Today page once the nurture engine is connected.
+                Nurture reminders will show up on the Today page once the nurture engine is
+                connected.
               </div>
             </div>
           )}
