@@ -96,7 +96,7 @@ export function TopBar() {
 
   const createItems: MenuItem[] = [
     { label: 'New Contact', dotBg: '#e8f0f0', iconColor: '#8ba5a8', kind: 'contact', action: () => navigate('/contacts/new') },
-    { label: 'New Task', dotBg: '#f2eaf0', iconColor: '#c198ad', kind: 'task', action: () => navigate('/tasks') },
+    { label: 'New Task', dotBg: '#f2eaf0', iconColor: '#c198ad', kind: 'task', action: () => navigate('/tasks/new') },
     { label: 'New Content Idea', dotBg: '#faf2f3', iconColor: '#e2b7be', kind: 'sparkle', action: () => navigate('/content/new') },
     { label: 'New Goal', dotBg: '#ede8f0', iconColor: '#93738e', kind: 'goal', action: () => navigate('/goals') },
   ]
