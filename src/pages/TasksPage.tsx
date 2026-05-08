@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { TaskCard } from '../components/shared/TaskCard'
 import { TaskModal } from '../components/shared/TaskModal'
 import { useToast } from '../components/shared/Toast'
+import { useContacts } from '../hooks/useContacts'
 import { useTasks, type Task, type TaskStatus } from '../hooks/useTasks'
 
 function blankTask(): Task {
@@ -37,11 +38,20 @@ export function TasksPage() {
     createTask,
   } = useTasks()
 
+  const { contacts } = useContacts()
   const { notify } = useToast()
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'open' | 'all' | 'done' | 'overdue' | 'starred'>('open')
+
+  const contactById = useMemo(() => {
+    const map = new Map<string, string>()
+    contacts.forEach((contact) => {
+      map.set(contact.id, contact.name)
+    })
+    return map
+  }, [contacts])
 
   useEffect(() => {
     const isNewTaskRoute = location.pathname === '/tasks/new'
@@ -90,13 +100,16 @@ export function TasksPage() {
         const q = query.trim().toLowerCase()
         if (!q) return true
 
+        const contactName = task.contact_id ? contactById.get(task.contact_id) ?? '' : ''
+
         return (
           task.title.toLowerCase().includes(q) ||
           (task.notes ?? '').toLowerCase().includes(q) ||
-          (task.task_type ?? '').toLowerCase().includes(q)
+          (task.task_type ?? '').toLowerCase().includes(q) ||
+          contactName.toLowerCase().includes(q)
         )
       })
-  }, [tasks, filter, query])
+  }, [tasks, filter, query, contactById])
 
   const closeTaskModal = () => {
     setSelectedTask(null)
@@ -165,6 +178,7 @@ export function TasksPage() {
               <TaskCard
                 key={task.id}
                 task={task}
+                contactName={task.contact_id ? contactById.get(task.contact_id) ?? null : null}
                 onEdit={(item) => {
                   setSelectedTask(item)
                   navigate(`/tasks/${item.id}`)
