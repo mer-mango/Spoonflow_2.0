@@ -33,6 +33,33 @@ type ContactInput = Partial<Contact> & {
   name: string
 }
 
+export type ContactUpdateInput = Partial<
+  Pick<
+    Contact,
+    | 'name'
+    | 'role'
+    | 'company'
+    | 'email'
+    | 'linkedin_url'
+    | 'scheduling_link'
+    | 'website'
+    | 'city'
+    | 'state'
+    | 'about'
+    | 'from_note'
+    | 'color'
+    | 'initials'
+    | 'image_url'
+    | 'starred'
+    | 'nurture_frequency_days'
+    | 'next_nurture_date'
+    | 'next_call_date'
+    | 'next_call_date_manual'
+    | 'calendar_event_id'
+    | 'notes'
+  >
+>
+
 type ImportResult = {
   created: number
   updated: number
@@ -104,7 +131,6 @@ function parseDate(value?: string | null) {
   if (!trimmed) return null
 
   const date = new Date(trimmed)
-
   if (Number.isNaN(date.getTime())) return null
 
   return date.toISOString()
@@ -140,7 +166,6 @@ function splitCsvLine(line: string) {
   }
 
   cells.push(current.trim())
-
   return cells
 }
 
@@ -195,7 +220,9 @@ function rowToContactInput(row: Record<string, string>): ContactInput | null {
     cleanText(getValue(row, ['name', 'full name', 'full_name', 'contact', 'contact name'])) ||
     cleanText(`${firstName} ${lastName}`)
 
-  const email = normalizeEmail(getValue(row, ['email', 'email address', 'primary email', 'work email']))
+  const email = normalizeEmail(
+    getValue(row, ['email', 'email address', 'primary email', 'work email']),
+  )
 
   if (!name && !email) return null
 
@@ -206,8 +233,12 @@ function rowToContactInput(row: Record<string, string>): ContactInput | null {
     email,
     role: cleanText(getValue(row, ['role', 'title', 'job title', 'job_title', 'position'])),
     company: cleanText(getValue(row, ['company', 'organization', 'organisation', 'account'])),
-    linkedin_url: cleanText(getValue(row, ['linkedin', 'linkedin url', 'linkedin_url', 'linkedin profile'])),
-    scheduling_link: cleanText(getValue(row, ['scheduling link', 'scheduling_link', 'calendly', 'booking link'])),
+    linkedin_url: cleanText(
+      getValue(row, ['linkedin', 'linkedin url', 'linkedin_url', 'linkedin profile']),
+    ),
+    scheduling_link: cleanText(
+      getValue(row, ['scheduling link', 'scheduling_link', 'calendly', 'booking link']),
+    ),
     website: cleanText(getValue(row, ['website', 'company website', 'url'])),
     city: cleanText(getValue(row, ['city'])),
     state: cleanText(getValue(row, ['state', 'province', 'region'])),
@@ -218,10 +249,17 @@ function rowToContactInput(row: Record<string, string>): ContactInput | null {
     initials: cleanText(getValue(row, ['initials'])) || makeInitials(finalName),
     starred: parseBoolean(getValue(row, ['starred', 'favorite', 'favourite'])),
     nurture_frequency_days: parseNumber(
-      getValue(row, ['nurture frequency', 'nurture_frequency', 'nurture_frequency_days', 'cadence']),
+      getValue(row, [
+        'nurture frequency',
+        'nurture_frequency',
+        'nurture_frequency_days',
+        'cadence',
+      ]),
     ),
     next_nurture_date: parseDate(getValue(row, ['next nurture date', 'next_nurture_date'])),
-    next_call_date: parseDate(getValue(row, ['next meeting', 'next_call_date', 'next call date', 'next meeting date'])),
+    next_call_date: parseDate(
+      getValue(row, ['next meeting', 'next_call_date', 'next call date', 'next meeting date']),
+    ),
   }
 }
 
@@ -252,6 +290,44 @@ function prepareForInsertOrUpdate(contact: ContactInput, userId: string) {
   }
 }
 
+function prepareUpdatePayload(patch: ContactUpdateInput) {
+  const payload: Record<string, string | number | boolean | null> = {
+    updated_at: new Date().toISOString(),
+  }
+
+  if ('name' in patch && patch.name !== undefined) {
+    payload.name = patch.name.trim() || 'Unnamed contact'
+    payload.initials = patch.initials ?? makeInitials(payload.name)
+  }
+
+  if ('role' in patch) payload.role = patch.role?.trim() || null
+  if ('company' in patch) payload.company = patch.company?.trim() || null
+  if ('email' in patch) payload.email = normalizeEmail(patch.email)
+  if ('linkedin_url' in patch) payload.linkedin_url = patch.linkedin_url?.trim() || null
+  if ('scheduling_link' in patch) payload.scheduling_link = patch.scheduling_link?.trim() || null
+  if ('website' in patch) payload.website = patch.website?.trim() || null
+  if ('city' in patch) payload.city = patch.city?.trim() || null
+  if ('state' in patch) payload.state = patch.state?.trim() || null
+  if ('about' in patch) payload.about = patch.about?.trim() || null
+  if ('from_note' in patch) payload.from_note = patch.from_note?.trim() || null
+  if ('color' in patch) payload.color = patch.color || '#8ba5a8'
+  if ('initials' in patch && !('name' in patch)) payload.initials = patch.initials?.trim() || null
+  if ('image_url' in patch) payload.image_url = patch.image_url?.trim() || null
+  if ('starred' in patch) payload.starred = Boolean(patch.starred)
+  if ('nurture_frequency_days' in patch) {
+    payload.nurture_frequency_days = patch.nurture_frequency_days ?? null
+  }
+  if ('next_nurture_date' in patch) payload.next_nurture_date = patch.next_nurture_date ?? null
+  if ('next_call_date' in patch) payload.next_call_date = patch.next_call_date ?? null
+  if ('next_call_date_manual' in patch) {
+    payload.next_call_date_manual = patch.next_call_date_manual ?? false
+  }
+  if ('calendar_event_id' in patch) payload.calendar_event_id = patch.calendar_event_id ?? null
+  if ('notes' in patch) payload.notes = patch.notes?.trim() || null
+
+  return payload
+}
+
 export function useContacts() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -273,28 +349,46 @@ export function useContacts() {
     void loadContacts()
   }, [loadContacts])
 
-  const createContact = useCallback(
-    async (payload: ContactInput) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+  const createContact = useCallback(async (payload: ContactInput) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-      if (!user) {
-        return { data: null, error: new Error('You must be signed in to create contacts.') }
-      }
+    if (!user) {
+      return { data: null, error: new Error('You must be signed in to create contacts.') }
+    }
 
-      const { data, error } = await supabase
-        .from('contacts')
-        .insert(prepareForInsertOrUpdate(payload, user.id))
-        .select(CONTACT_SELECT)
-        .single()
+    const { data, error } = await supabase
+      .from('contacts')
+      .insert(prepareForInsertOrUpdate(payload, user.id))
+      .select(CONTACT_SELECT)
+      .single()
 
-      if (!error && data) setContacts((prev) => [data as Contact, ...prev])
+    if (!error && data) setContacts((prev) => [data as Contact, ...prev])
 
-      return { data, error }
-    },
-    [],
-  )
+    return { data, error }
+  }, [])
+
+  const updateContact = useCallback(async (contactId: string, patch: ContactUpdateInput) => {
+    const payload = prepareUpdatePayload(patch)
+
+    const { data, error } = await supabase
+      .from('contacts')
+      .update(payload)
+      .eq('id', contactId)
+      .select(CONTACT_SELECT)
+      .single()
+
+    if (!error && data) {
+      setContacts((prev) =>
+        prev
+          .map((contact) => (contact.id === contactId ? (data as Contact) : contact))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      )
+    }
+
+    return { data, error }
+  }, [])
 
   const importContactsCsv = useCallback(
     async (file: File): Promise<ImportResult> => {
@@ -332,7 +426,9 @@ export function useContacts() {
       )
 
       const toInsert: Array<ReturnType<typeof prepareForInsertOrUpdate>> = []
-      const toUpdate: Array<{ id: string; payload: ReturnType<typeof prepareForInsertOrUpdate> }> = []
+      const toUpdate: Array<{ id: string; payload: ReturnType<typeof prepareForInsertOrUpdate> }> =
+        []
+
       const seenEmailsInFile = new Set<string>()
 
       for (const contact of parsedContacts) {
@@ -366,12 +462,7 @@ export function useContacts() {
 
       if (toUpdate.length > 0) {
         const updateResponses = await Promise.all(
-          toUpdate.map(({ id, payload }) =>
-            supabase
-              .from('contacts')
-              .update(payload)
-              .eq('id', id),
-          ),
+          toUpdate.map(({ id, payload }) => supabase.from('contacts').update(payload).eq('id', id)),
         )
 
         const failed = updateResponses.filter((response) => response.error)
@@ -398,8 +489,9 @@ export function useContacts() {
       isLoading,
       loadContacts,
       createContact,
+      updateContact,
       importContactsCsv,
     }),
-    [contacts, isLoading, loadContacts, createContact, importContactsCsv],
+    [contacts, isLoading, loadContacts, createContact, updateContact, importContactsCsv],
   )
 }
