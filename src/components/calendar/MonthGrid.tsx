@@ -23,10 +23,9 @@ function eventDateKey(iso: string) {
 
 function startOfCalendarGrid(month: Date) {
   const firstDayOfMonth = new Date(month.getFullYear(), month.getMonth(), 1)
-  const dayOfWeek = firstDayOfMonth.getDay()
   const start = new Date(firstDayOfMonth)
 
-  start.setDate(firstDayOfMonth.getDate() - dayOfWeek)
+  start.setDate(firstDayOfMonth.getDate() - firstDayOfMonth.getDay())
 
   return start
 }
@@ -91,39 +90,43 @@ export function MonthGrid({
               key={key}
               type="button"
               onClick={() => onSelectDate(key)}
-              className={`min-h-[112px] border-b border-r border-[var(--border)] p-2 text-left transition last:border-r-0 hover:bg-black/[0.02] ${
+              className={`flex min-h-[112px] flex-col items-stretch border-b border-r border-[var(--border)] p-2 text-left transition hover:bg-black/[0.02] ${
                 isSelected ? 'bg-[rgba(100,132,161,0.06)]' : 'bg-white'
               }`}
             >
-              <div className="mb-2 flex items-center justify-between">
+              <div className="mb-2 flex w-full items-start justify-start">
                 <span
-                  className={`flex h-7 w-7 items-center justify-center rounded-full text-sm ${
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm ${
                     isToday
                       ? 'bg-[var(--meeting)] font-semibold text-white'
                       : isCurrentMonth
                         ? 'text-[var(--text)]'
-                        : 'text-[var(--muted)] opacity-60'
+                        : 'text-[var(--muted)] opacity-55'
                   }`}
                 >
                   {day.getDate()}
                 </span>
               </div>
 
-              <div className="space-y-1">
-                {dayEvents.slice(0, 3).map((event) => (
-                  <div
-                    key={`${event.id}-${event.startTime}`}
-                    className="truncate rounded-md px-2 py-1 text-[10.5px] font-medium leading-tight"
-                    style={{
-                      backgroundColor: `${event.color ?? '#6484a1'}22`,
-                      color: event.color ?? '#6484a1',
-                    }}
-                    title={event.title}
-                  >
-                    <span className="font-semibold">{timeLabel(event.startTime)}</span>{' '}
-                    {event.title}
-                  </div>
-                ))}
+              <div className="min-w-0 space-y-1">
+                {dayEvents.slice(0, 3).map((event) => {
+                  const color = event.color ?? '#6484a1'
+
+                  return (
+                    <div
+                      key={`${event.id}-${event.startTime}`}
+                      className="truncate rounded-md px-2 py-1 text-[10.5px] font-medium leading-tight"
+                      style={{
+                        backgroundColor: `${color}22`,
+                        color,
+                      }}
+                      title={event.title}
+                    >
+                      <span className="font-semibold">{timeLabel(event.startTime)}</span>{' '}
+                      {event.title}
+                    </div>
+                  )
+                })}
 
                 {dayEvents.length > 3 && (
                   <div className="px-2 text-[10px] text-[var(--muted)]">
