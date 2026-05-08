@@ -12,8 +12,11 @@ export type Task = {
   due_date: string | null
   estimated_minutes: number
   starred: boolean
+  archived: boolean
   contact_id: string | null
   goal_id: string | null
+  content_item_id?: string | null
+  meeting_id?: string | null
   created_at?: string | null
   updated_at?: string | null
 }
@@ -32,8 +35,11 @@ export type TaskUpdateInput = Partial<
     | 'due_date'
     | 'estimated_minutes'
     | 'starred'
+    | 'archived'
     | 'contact_id'
     | 'goal_id'
+    | 'content_item_id'
+    | 'meeting_id'
   >
 >
 
@@ -46,8 +52,11 @@ const TASK_SELECT = `
   due_date,
   estimated_minutes,
   starred,
+  archived,
   contact_id,
   goal_id,
+  content_item_id,
+  meeting_id,
   created_at,
   updated_at
 `
@@ -75,8 +84,11 @@ function prepareTaskInsert(payload: TaskInput) {
     due_date: payload.due_date || null,
     estimated_minutes: normalizeMinutes(payload.estimated_minutes),
     starred: payload.starred ?? false,
+    archived: payload.archived ?? false,
     contact_id: payload.contact_id ?? null,
     goal_id: payload.goal_id ?? null,
+    content_item_id: payload.content_item_id ?? null,
+    meeting_id: cleanText(payload.meeting_id),
     updated_at: new Date().toISOString(),
   }
 }
@@ -98,8 +110,11 @@ function prepareTaskUpdate(patch: TaskUpdateInput) {
     payload.estimated_minutes = normalizeMinutes(patch.estimated_minutes)
   }
   if ('starred' in patch) payload.starred = Boolean(patch.starred)
+  if ('archived' in patch) payload.archived = Boolean(patch.archived)
   if ('contact_id' in patch) payload.contact_id = patch.contact_id ?? null
   if ('goal_id' in patch) payload.goal_id = patch.goal_id ?? null
+  if ('content_item_id' in patch) payload.content_item_id = patch.content_item_id ?? null
+  if ('meeting_id' in patch) payload.meeting_id = cleanText(patch.meeting_id)
 
   return payload
 }
@@ -143,6 +158,7 @@ function isTaskOverdue(task: Task) {
 
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([])
+  const [archivedTasks, setArchivedTasks] = useState<Task[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   const loadTasks = useCallback(async () => {
@@ -151,6 +167,7 @@ export function useTasks() {
     const { data, error } = await supabase
       .from('tasks')
       .select(TASK_SELECT)
+      .eq('archived', false)
       .order('created_at', { ascending: false })
 
     if (!error) {
@@ -158,6 +175,20 @@ export function useTasks() {
     }
 
     setIsLoading(false)
+
+    return { data, error }
+  }, [])
+
+  const loadArchivedTasks = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select(TASK_SELECT)
+      .eq('archived', true)
+      .order('updated_at', { ascending: false })
+
+    if (!error) {
+      setArchivedTasks(sortTasks((data as Task[]) ?? []))
+    }
 
     return { data, error }
   }, [])
@@ -188,7 +219,12 @@ export function useTasks() {
       .single()
 
     if (!error && data) {
-      setTasks((prev) => sortTasks([data as Task, ...prev]))
+      const task = data as Task
+      if (task.archived) {
+        setArchivedTasks((prev) => sortTasks([task, ...prev]))
+      } else {
+        setTasks((prev) => sortTasks([task, ...prev]))
+      }
     }
 
     return { data, error }
@@ -203,19 +239,50 @@ export function useTasks() {
       .single()
 
     if (!error && data) {
-      setTasks((prev) =>
-        sortTasks(prev.map((task) => (task.id === id ? (data as Task) : task))),
-      )
+      const updatedTask = data as Task
+
+      setTasks((prev) => {
+        if (updatedTask.archived) {
+          return prev.filter((task) => task.id !== id)
+        }
+
+        const exists = prev.some((task) => task.id === id)
+        return sortTasks(exists ? prev.map((task) => (task.id === id ? updatedTask : task)) : [updatedTask, ...prev])
+      })
+
+      setArchivedTasks((prev) => {
+        if (!updatedTask.archived) {
+          return prev.filter((task) => task.id !== id)
+        }
+
+        const exists = prev.some((task) => task.id === id)
+        return sortTasks(exists ? prev.map((task) => (task.id === id ? updatedTask : task)) : [updatedTask, ...prev])
+      })
     }
 
     return { data, error }
   }, [])
+
+  const archiveTask = useCallback(
+    async (id: string) => {
+      return updateTask(id, { archived: true })
+    },
+    [updateTask],
+  )
+
+  const restoreTask = useCallback(
+    async (id: string) => {
+      return updateTask(id, { archived: false })
+    },
+    [updateTask],
+  )
 
   const deleteTask = useCallback(async (id: string) => {
     const { error } = await supabase.from('tasks').delete().eq('id', id)
 
     if (!error) {
       setTasks((prev) => prev.filter((task) => task.id !== id))
+      setArchivedTasks((prev) => prev.filter((task) => task.id !== id))
     }
 
     return { error }
@@ -231,11 +298,25 @@ export function useTasks() {
       .select(TASK_SELECT)
 
     if (!error && data) {
-      const updatedById = new Map((data as Task[]).map((task) => [task.id, task]))
+      const updatedTasks = data as Task[]
+      const updatedById = new Map(updatedTasks.map((task) => [task.id, task]))
 
       setTasks((prev) =>
-        sortTasks(prev.map((task) => updatedById.get(task.id) ?? task)),
+        sortTasks(
+          prev
+            .map((task) => updatedById.get(task.id) ?? task)
+            .filter((task) => !task.archived),
+        ),
       )
+
+      setArchivedTasks((prev) => {
+        const merged = [
+          ...prev.filter((task) => !updatedById.has(task.id)),
+          ...updatedTasks.filter((task) => task.archived),
+        ]
+
+        return sortTasks(merged)
+      })
     }
 
     return { data, error }
@@ -248,10 +329,25 @@ export function useTasks() {
 
     if (!error) {
       setTasks((prev) => prev.filter((task) => !ids.includes(task.id)))
+      setArchivedTasks((prev) => prev.filter((task) => !ids.includes(task.id)))
     }
 
     return { error }
   }, [])
+
+  const bulkArchiveTasks = useCallback(
+    async (ids: string[]) => {
+      return bulkUpdateTasks(ids, { archived: true })
+    },
+    [bulkUpdateTasks],
+  )
+
+  const bulkRestoreTasks = useCallback(
+    async (ids: string[]) => {
+      return bulkUpdateTasks(ids, { archived: false })
+    },
+    [bulkUpdateTasks],
+  )
 
   const openTasks = useMemo(
     () => tasks.filter((task) => task.status !== 'done'),
@@ -281,6 +377,7 @@ export function useTasks() {
   return useMemo(
     () => ({
       tasks,
+      archivedTasks,
       openTasks,
       doneTasks,
       overdueTasks,
@@ -288,14 +385,20 @@ export function useTasks() {
       starredTasks,
       isLoading,
       loadTasks,
+      loadArchivedTasks,
       createTask,
       updateTask,
+      archiveTask,
+      restoreTask,
       deleteTask,
       bulkUpdateTasks,
       bulkDeleteTasks,
+      bulkArchiveTasks,
+      bulkRestoreTasks,
     }),
     [
       tasks,
+      archivedTasks,
       openTasks,
       doneTasks,
       overdueTasks,
@@ -303,11 +406,16 @@ export function useTasks() {
       starredTasks,
       isLoading,
       loadTasks,
+      loadArchivedTasks,
       createTask,
       updateTask,
+      archiveTask,
+      restoreTask,
       deleteTask,
       bulkUpdateTasks,
       bulkDeleteTasks,
+      bulkArchiveTasks,
+      bulkRestoreTasks,
     ],
   )
 }
