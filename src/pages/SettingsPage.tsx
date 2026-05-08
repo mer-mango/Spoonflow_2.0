@@ -16,6 +16,7 @@ type FathomMeeting = {
   started_at?: string | null
   start_time?: string | null
   created_at?: string | null
+  imported_at?: string | null
   fathom_url?: string | null
   url?: string | null
   summary?: string | null
@@ -65,7 +66,13 @@ function getMeetingTitle(meeting: FathomMeeting) {
 }
 
 function getMeetingDate(meeting: FathomMeeting) {
-  return meeting.started_at || meeting.start_time || meeting.created_at || null
+  return (
+    meeting.started_at ||
+    meeting.start_time ||
+    meeting.created_at ||
+    meeting.imported_at ||
+    null
+  )
 }
 
 function getMeetingUrl(meeting: FathomMeeting) {
@@ -91,7 +98,7 @@ export function SettingsPage() {
       const { data, error } = await supabase
         .from('fathom_meetings')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('imported_at', { ascending: false })
         .limit(10)
 
       if (error) {
@@ -254,6 +261,7 @@ export function SettingsPage() {
                     type="button"
                     onClick={() => {
                       setActiveSection(item.id)
+
                       if (item.id === 'integrations') {
                         window.history.replaceState(null, '', '/settings/integrations')
                       } else {
@@ -279,22 +287,6 @@ export function SettingsPage() {
           {statusMessage && (
             <div className="mb-5 rounded-xl border border-[rgba(107,35,88,0.18)] bg-[rgba(107,35,88,0.06)] px-4 py-3 text-sm text-[var(--jamie)]">
               {statusMessage}
-            </div>
-          )}
-
-          {activeSection === 'profile' && (
-            <div>
-              <h2 className="text-2xl">Profile</h2>
-              <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
-                Workspace profile settings will live here.
-              </p>
-
-              <div className="mt-6 rounded-xl border border-[var(--border)] bg-white p-5">
-                <p className="font-medium">SpoonFlow workspace</p>
-                <p className="mt-1 text-sm text-[var(--muted)]">
-                  Your workspace is connected to Supabase and Vercel.
-                </p>
-              </div>
             </div>
           )}
 
@@ -419,6 +411,7 @@ export function SettingsPage() {
                           <label className="mt-4 block text-xs font-medium text-[var(--muted)]">
                             Fathom workspace or login URL
                           </label>
+
                           <input
                             value={fathomWorkspaceUrl}
                             onChange={(event) => setFathomWorkspaceUrl(event.target.value)}
@@ -483,6 +476,7 @@ export function SettingsPage() {
                                           <p className="text-sm font-semibold text-[var(--text)]">
                                             {getMeetingTitle(meeting)}
                                           </p>
+
                                           <p className="mt-1 text-xs text-[var(--muted)]">
                                             {formatDate(getMeetingDate(meeting))}
                                           </p>
@@ -520,29 +514,14 @@ export function SettingsPage() {
             </div>
           )}
 
-          {activeSection === 'notifications' && (
+          {activeSection !== 'integrations' && (
             <div>
-              <h2 className="text-2xl">Notifications</h2>
-              <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
-                Notification settings will live here.
-              </p>
-            </div>
-          )}
+              <h2 className="text-2xl">
+                {sections.find((section) => section.id === activeSection)?.label}
+              </h2>
 
-          {activeSection === 'jamie' && (
-            <div>
-              <h2 className="text-2xl">Jamie</h2>
               <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
-                Jamie preferences, prompt behavior, and workflow defaults will live here.
-              </p>
-            </div>
-          )}
-
-          {activeSection === 'data' && (
-            <div>
-              <h2 className="text-2xl">Data & Privacy</h2>
-              <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
-                Data export, privacy, and workspace cleanup settings will live here.
+                Settings for this section will live here.
               </p>
             </div>
           )}
