@@ -7,6 +7,7 @@ import { useContacts } from '../hooks/useContacts'
 import { useTasks, type Task, type TaskStatus } from '../hooks/useTasks'
 
 type ViewMode = 'list' | 'kanban'
+
 type FilterMode =
   | 'open'
   | 'all'
