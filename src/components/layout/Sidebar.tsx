@@ -320,33 +320,36 @@ export function Sidebar() {
       <nav className="flex-1 px-2 py-3">
         {navItems.map((item) => (
           <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) =>
-              `mb-1 flex cursor-pointer items-center gap-2 rounded-full px-2.5 py-2 text-[12.5px] leading-none transition-all ${
-                isActive
-                  ? 'bg-[#45556c] font-medium text-white shadow-[0_6px_14px_rgba(69,85,108,0.22)]'
-                  : 'text-[#26344f] hover:bg-black/[0.04]'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <IconBubble color={item.color} icon={item.icon} active={isActive} />
-                <span className="min-w-0 flex-1 truncate">{item.label}</span>
+  key={item.path}
+  to={item.path}
+  className={({ isActive }) =>
+    `mb-1 flex cursor-pointer items-center gap-2 rounded-full px-2.5 py-2 text-[12.5px] leading-none transition-all ${
+      isActive
+        ? 'font-medium text-white shadow-[0_6px_14px_rgba(69,85,108,0.18)]'
+        : 'text-[#26344f] hover:bg-black/[0.04]'
+    }`
+  }
+  style={({ isActive }) => ({
+    backgroundColor: isActive ? item.color : undefined,
+  })}
+>
+  {({ isActive }) => (
+    <>
+      <IconBubble color={item.color} icon={item.icon} active={isActive} />
+      <span className="min-w-0 flex-1 truncate">{item.label}</span>
 
-                {typeof item.count === 'number' && (
-                  <span
-                    className={`text-[11px] leading-none ${
-                      isActive ? 'text-white/80' : 'text-[var(--muted)]'
-                    }`}
-                  >
-                    {item.count}
-                  </span>
-                )}
-              </>
-            )}
-          </NavLink>
+      {typeof item.count === 'number' && (
+        <span
+          className={`text-[11px] leading-none ${
+            isActive ? 'text-white/80' : 'text-[var(--muted)]'
+          }`}
+        >
+          {item.count}
+        </span>
+      )}
+    </>
+  )}
+</NavLink>
         ))}
       </nav>
 
