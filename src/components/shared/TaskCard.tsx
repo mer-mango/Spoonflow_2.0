@@ -6,8 +6,11 @@ type TaskCardProps = {
   contactName?: string | null
   onToggle: (task: Task) => void
   onEdit: (task: Task) => void
-  onArchive: (task: Task) => void
-  onStar: (task: Task) => void
+  onArchive?: (task: Task) => void
+  onDelete?: (task: Task) => void
+  onStar?: (task: Task) => void
+  showContact?: boolean
+  showGoal?: boolean
 }
 
 const taskTypeLabels: Record<string, string> = {
@@ -112,10 +115,22 @@ export function TaskCard({
   onToggle,
   onEdit,
   onArchive,
+  onDelete,
   onStar,
 }: TaskCardProps) {
   const done = task.status === 'done'
   const dateParts = dateBoxParts(task.due_date)
+
+  const handleArchiveOrDelete = () => {
+    if (onArchive) {
+      onArchive(task)
+      return
+    }
+
+    if (onDelete) {
+      onDelete(task)
+    }
+  }
 
   return (
     <article
@@ -179,7 +194,7 @@ export function TaskCard({
                 }`}
                 onClick={(event) => {
                   event.stopPropagation()
-                  onStar(task)
+                  onStar?.(task)
                 }}
               >
                 {task.starred ? '★' : '☆'}
@@ -228,18 +243,20 @@ export function TaskCard({
         </div>
       </div>
 
-      <button
-        type="button"
-        className="flex items-center px-3 text-[#bbb6ad] opacity-80 transition hover:text-[var(--tasks)]"
-        onClick={(event) => {
-          event.stopPropagation()
-          onArchive(task)
-        }}
-        aria-label="Archive task"
-        title="Archive task"
-      >
-        <ArchiveIcon />
-      </button>
+      {(onArchive || onDelete) && (
+        <button
+          type="button"
+          className="flex items-center px-3 text-[#bbb6ad] opacity-80 transition hover:text-[var(--tasks)]"
+          onClick={(event) => {
+            event.stopPropagation()
+            handleArchiveOrDelete()
+          }}
+          aria-label={onArchive ? 'Archive task' : 'Delete task'}
+          title={onArchive ? 'Archive task' : 'Delete task'}
+        >
+          <ArchiveIcon />
+        </button>
+      )}
     </article>
   )
 }
