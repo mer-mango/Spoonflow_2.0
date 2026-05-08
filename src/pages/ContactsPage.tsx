@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { useContacts, type Contact } from '../hooks/useContacts'
 import { ContactModal } from '../components/contacts/ContactModal'
 import { useToast } from '../components/shared/Toast'
+import { useTasks } from '../hooks/useTasks'
 
 function initials(name: string) {
   return name
@@ -25,30 +26,98 @@ function formatDate(value?: string | null) {
   }
 }
 
+function isOverdue(value?: string | null) {
+  if (!value) return false
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const date = new Date(value)
+  date.setHours(0, 0, 0, 0)
+
+  return date.getTime() < today.getTime()
+}
+
+function exportContactsCsv(contacts: Contact[]) {
+  const headers = [
+    'name',
+    'email',
+    'role',
+    'company',
+    'linkedin_url',
+    'website',
+    'scheduling_link',
+    'city',
+    'state',
+    'from_note',
+    'about',
+    'notes',
+    'starred',
+    'nurture_frequency_days',
+    'next_nurture_date',
+    'next_call_date',
+  ]
+
+  const rows = contacts.map((contact) =>
+    headers.map((header) => {
+      const value = contact[header as keyof Contact] ?? ''
+      return `"${String(value).replace(/"/g, '""')}"`
+    }),
+  )
+
+  const csv = [headers, ...rows].map((row) => row.join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+
+  link.href = url
+  link.download = `spoonflow-contacts-${new Date().toISOString().slice(0, 10)}.csv`
+  link.click()
+
+  URL.revokeObjectURL(url)
+}
+
 export function ContactsPage() {
-  const { contacts, isLoading, createContact, importContactsCsv } = useContacts()
+  const { contacts, isLoading, createContact, updateContact, importContactsCsv } = useContacts()
+  const { tasks } = useTasks()
   const { notify } = useToast()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Contact | null>(null)
-  const [newName, setNewName] = useState('')
-  const [newEmail, setNewEmail] = useState('')
+  const [modalOpen, setModalOpen] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [importMessage, setImportMessage] = useState<string | null>(null)
 
+  const taskCountByContactId = useMemo(() => {
+    const counts = new Map<string, number>()
+
+    tasks.forEach((task) => {
+      if (!task.contact_id) return
+      counts.set(task.contact_id, (counts.get(task.contact_id) ?? 0) + 1)
+    })
+
+    return counts
+  }, [tasks])
+
   const filtered = useMemo(
     () =>
-      contacts.filter((contact) => {
-        const q = query.toLowerCase()
+      contacts
+        .filter((contact) => {
+          const q = query.toLowerCase()
 
-        return (
-          contact.name.toLowerCase().includes(q) ||
-          (contact.email ?? '').toLowerCase().includes(q) ||
-          (contact.company ?? '').toLowerCase().includes(q) ||
-          (contact.role ?? '').toLowerCase().includes(q)
-        )
-      }),
+          return (
+            contact.name.toLowerCase().includes(q) ||
+            (contact.email ?? '').toLowerCase().includes(q) ||
+            (contact.company ?? '').toLowerCase().includes(q) ||
+            (contact.role ?? '').toLowerCase().includes(q) ||
+            (contact.from_note ?? '').toLowerCase().includes(q)
+          )
+        })
+        .sort((a, b) => {
+          if (a.starred !== b.starred) return a.starred ? -1 : 1
+          return a.name.localeCompare(b.name)
+        }),
     [contacts, query],
   )
 
@@ -89,12 +158,12 @@ export function ContactsPage() {
 
   return (
     <section className="space-y-4">
-      <header className="rounded-2xl bg-white p-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <header className="rounded-2xl border border-[var(--border)] bg-white">
+        <div className="flex flex-col gap-3 border-b border-[var(--border)] px-5 py-5 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="text-2xl">Contacts</h1>
             <p className="mt-1 text-sm text-[var(--muted)]">
-              {contacts.length} contact{contacts.length === 1 ? '' : 's'}
+              {contacts.length} contact{contacts.length === 1 ? '' : 's'} · {filtered.length} shown
             </p>
           </div>
 
@@ -118,172 +187,199 @@ export function ContactsPage() {
 
             <button
               type="button"
+              onClick={() => {
+                exportContactsCsv(contacts)
+                notify('Contacts exported')
+              }}
+              className="rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--text)] shadow-sm transition hover:bg-black/[0.03]"
+            >
+              Export CSV
+            </button>
+
+            <button
+              type="button"
               className="rounded-full bg-[var(--jamie)] px-4 py-2 text-sm font-medium text-white shadow-sm"
-              onClick={async () => {
-                if (!newName.trim()) return
-
-                const { error } = await createContact({
-                  name: newName.trim(),
-                  email: newEmail.trim() || null,
-                })
-
-                if (!error) {
-                  setNewName('')
-                  setNewEmail('')
-                  notify('Contact created')
-                }
+              onClick={() => {
+                setSelected(null)
+                setModalOpen(true)
               }}
             >
               + New Contact
             </button>
           </div>
         </div>
-      </header>
 
-      <div className="rounded-2xl bg-white p-4">
-        {importMessage && (
-          <div className="mb-4 rounded-xl border border-[rgba(107,35,88,0.18)] bg-[rgba(107,35,88,0.06)] px-4 py-3 text-sm text-[var(--jamie)]">
-            {importMessage}
-          </div>
-        )}
-
-        <div className="mb-4 grid gap-2 md:grid-cols-[1fr_1fr]">
+        <div className="px-5 py-3">
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search contacts, companies, email..."
-            className="rounded-full border border-[var(--border)] px-4 py-2 text-sm outline-none focus:border-[var(--meeting)]"
+            className="w-full rounded-full border border-[var(--border)] bg-[var(--bg)] px-4 py-2 text-sm outline-none focus:border-[var(--meeting)]"
           />
-
-          <div className="grid gap-2 md:grid-cols-[1fr_1fr]">
-            <input
-              value={newName}
-              onChange={(event) => setNewName(event.target.value)}
-              placeholder="Quick add name"
-              className="rounded-full border border-[var(--border)] px-4 py-2 text-sm outline-none focus:border-[var(--meeting)]"
-            />
-
-            <input
-              value={newEmail}
-              onChange={(event) => setNewEmail(event.target.value)}
-              placeholder="Quick add email"
-              className="rounded-full border border-[var(--border)] px-4 py-2 text-sm outline-none focus:border-[var(--meeting)]"
-            />
-          </div>
         </div>
+      </header>
 
+      {importMessage && (
+        <div className="rounded-xl border border-[rgba(107,35,88,0.18)] bg-[rgba(107,35,88,0.06)] px-4 py-3 text-sm text-[var(--jamie)]">
+          {importMessage}
+        </div>
+      )}
+
+      <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-white">
         {isLoading ? (
-          <p className="text-sm text-[var(--muted)]">Loading contacts...</p>
+          <p className="p-5 text-sm text-[var(--muted)]">Loading contacts...</p>
         ) : filtered.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg)] p-6 text-center">
+          <div className="m-5 rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg)] p-8 text-center">
             <p className="font-serif text-xl text-[var(--text)]">No contacts found</p>
             <p className="mt-2 text-sm text-[var(--muted)]">
-              Try another search, add a contact, or import a CSV.
+              Try another search, import a CSV, or create a new contact.
             </p>
           </div>
         ) : (
           <>
             <div className="hidden overflow-x-auto md:block">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-[var(--border)] text-[var(--muted)]">
+              <table className="w-full table-fixed text-left text-sm">
+                <thead className="sticky top-0 border-b border-[var(--border)] bg-white text-[10px] uppercase tracking-[0.08em] text-[var(--muted)]">
                   <tr>
-                    <th className="pb-3 pl-2">Contact</th>
-                    <th className="pb-3">Email</th>
-                    <th className="pb-3">Company</th>
-                    <th className="pb-3">Next meeting</th>
-                    <th className="pb-3 pr-2 text-right">Nurture</th>
+                    <th className="w-[42px] px-3 py-3" />
+                    <th className="w-[32%] px-3 py-3 font-medium">Contact</th>
+                    <th className="w-[28%] px-3 py-3 font-medium">Email</th>
+                    <th className="w-[16%] px-3 py-3 font-medium">Next meeting</th>
+                    <th className="w-[10%] px-3 py-3 font-medium">Tasks</th>
+                    <th className="w-[14%] px-3 py-3 font-medium">Nurture</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {filtered.map((contact) => (
-                    <tr
-                      key={contact.id}
-                      className="cursor-pointer border-b border-[var(--border)] transition hover:bg-black/[0.02]"
-                      onClick={() => setSelected(contact)}
-                    >
-                      <td className="py-3 pl-2">
-                        <div className="flex items-center gap-3">
+                  {filtered.map((contact) => {
+                    const taskCount = taskCountByContactId.get(contact.id) ?? 0
+                    const nurtureOverdue = isOverdue(contact.next_nurture_date)
+
+                    return (
+                      <tr
+                        key={contact.id}
+                        className="cursor-pointer border-b border-[rgba(44,44,42,0.06)] transition hover:bg-[#faf9f8]"
+                        onClick={() => {
+                          setSelected(contact)
+                          setModalOpen(true)
+                        }}
+                      >
+                        <td className="px-3 py-3 align-middle">
                           <button
                             type="button"
-                            className={`text-base ${
-                              contact.starred ? 'text-[#d8a923]' : 'text-[var(--border)]'
+                            className={`flex h-6 w-6 items-center justify-center text-base transition ${
+                              contact.starred ? 'text-[#d8a923]' : 'text-[#d8d5cf] hover:text-[#b8b3aa]'
                             }`}
-                            onClick={(event) => {
+                            onClick={async (event) => {
                               event.stopPropagation()
+                              const { error } = await updateContact(contact.id, {
+                                starred: !contact.starred,
+                              })
+
+                              if (!error) notify(contact.starred ? 'Contact unstarred' : 'Contact starred')
                             }}
-                            aria-label={contact.starred ? 'Starred contact' : 'Unstarred contact'}
+                            aria-label={contact.starred ? 'Unstar contact' : 'Star contact'}
                           >
                             ★
                           </button>
+                        </td>
 
-                          <span
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold text-white"
-                            style={{ backgroundColor: contact.color ?? '#8ba5a8' }}
-                          >
-                            {contact.initials || initials(contact.name)}
-                          </span>
+                        <td className="px-3 py-3 align-middle">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <span
+                              className="inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] font-semibold text-white"
+                              style={{ backgroundColor: contact.color ?? '#8ba5a8' }}
+                            >
+                              {contact.image_url ? (
+                                <img src={contact.image_url} alt="" className="h-full w-full object-cover" />
+                              ) : (
+                                contact.initials || initials(contact.name)
+                              )}
+                            </span>
 
-                          <div>
-                            <p className="font-semibold text-[var(--text)]">{contact.name}</p>
-                            <p className="text-xs text-[var(--muted)]">
-                              {[contact.role, contact.company].filter(Boolean).join(' · ') || '—'}
-                            </p>
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-[var(--text)]">{contact.name}</p>
+                              <p className="truncate text-xs text-[var(--muted)]">
+                                {[contact.role, contact.company].filter(Boolean).join(' · ') || '—'}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="py-3 text-[var(--muted)]">
-                        {contact.email ? (
-                          <button
-                            type="button"
-                            className="hover:text-[var(--meeting)]"
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              void navigator.clipboard.writeText(contact.email ?? '')
-                              notify('Email copied')
-                            }}
-                          >
-                            {contact.email}
-                          </button>
-                        ) : (
-                          '—'
-                        )}
-                      </td>
+                        <td className="px-3 py-3 align-middle text-[var(--muted)]">
+                          {contact.email ? (
+                            <button
+                              type="button"
+                              className="block max-w-full truncate text-left text-xs hover:text-[var(--meeting)] hover:underline"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                void navigator.clipboard.writeText(contact.email ?? '')
+                                notify('Email copied')
+                              }}
+                            >
+                              {contact.email}
+                            </button>
+                          ) : (
+                            <span className="text-xs text-[#c8c5c0]">—</span>
+                          )}
+                        </td>
 
-                      <td className="py-3 text-[var(--muted)]">{contact.company || '—'}</td>
+                        <td className="px-3 py-3 align-middle">
+                          {contact.next_call_date ? (
+                            <span className="inline-flex rounded-md bg-[rgba(100,132,161,0.12)] px-2 py-1 text-xs font-medium text-[var(--meeting)]">
+                              {formatDate(contact.next_call_date)}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-[#c8c5c0]">—</span>
+                          )}
+                        </td>
 
-                      <td className="py-3">
-                        {contact.next_call_date ? (
-                          <span className="rounded-lg bg-[rgba(100,132,161,0.12)] px-2 py-1 text-xs font-medium text-[var(--meeting)]">
-                            {formatDate(contact.next_call_date)}
-                          </span>
-                        ) : (
-                          <span className="text-[var(--muted)]">—</span>
-                        )}
-                      </td>
+                        <td className="px-3 py-3 align-middle">
+                          {taskCount > 0 ? (
+                            <span className="inline-flex rounded-md bg-[rgba(193,152,173,0.18)] px-2 py-1 text-xs font-medium text-[#a36f8c]">
+                              {taskCount}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-[#c8c5c0]">—</span>
+                          )}
+                        </td>
 
-                      <td className="py-3 pr-2 text-right">
-                        {contact.next_nurture_date ? (
-                          <span className="rounded-lg bg-[rgba(143,167,144,0.14)] px-2 py-1 text-xs font-medium text-[#6f8d70]">
-                            {formatDate(contact.next_nurture_date)}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-[var(--muted)]">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                        <td className="px-3 py-3 align-middle">
+                          {contact.next_nurture_date ? (
+                            <span
+                              className={`inline-flex items-center gap-1 text-xs font-medium ${
+                                nurtureOverdue ? 'text-[#c9888e]' : 'text-[#8fa790]'
+                              }`}
+                            >
+                              <span
+                                className="h-1.5 w-1.5 rounded-full"
+                                style={{ backgroundColor: nurtureOverdue ? '#c9888e' : '#8fa790' }}
+                              />
+                              {nurtureOverdue ? 'overdue' : formatDate(contact.next_nurture_date)}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs text-[#c0bdb8]">
+                              <span className="h-1.5 w-1.5 rounded-full bg-[#ddd]" />
+                              none
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
 
-            <div className="grid gap-2 md:hidden">
+            <div className="grid gap-2 p-3 md:hidden">
               {filtered.map((contact) => (
                 <button
                   key={contact.id}
-                  className="rounded-xl border border-[var(--border)] p-3 text-left"
-                  onClick={() => setSelected(contact)}
+                  className="rounded-xl border border-[var(--border)] bg-white p-3 text-left"
+                  onClick={() => {
+                    setSelected(contact)
+                    setModalOpen(true)
+                  }}
                 >
                   <p className="font-medium">{contact.name}</p>
                   <p className="text-sm text-[var(--muted)]">
@@ -296,7 +392,16 @@ export function ContactsPage() {
         )}
       </div>
 
-      <ContactModal open={Boolean(selected)} contact={selected} onClose={() => setSelected(null)} />
+      <ContactModal
+        open={modalOpen}
+        contact={selected}
+        onClose={() => {
+          setModalOpen(false)
+          setSelected(null)
+        }}
+        onCreate={createContact}
+        onUpdate={updateContact}
+      />
     </section>
   )
 }
