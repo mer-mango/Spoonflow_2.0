@@ -18,6 +18,8 @@ function blankTask(): Task {
     archived: false,
     contact_id: null,
     goal_id: null,
+    content_item_id: null,
+    meeting_id: null,
   }
 }
 
@@ -31,7 +33,7 @@ export function TasksPage() {
     openTasks,
     isLoading,
     updateTask,
-    deleteTask,
+    archiveTask,
     createTask,
   } = useTasks()
 
@@ -39,7 +41,7 @@ export function TasksPage() {
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<'open' | 'all' | 'done' | 'overdue'>('open')
+  const [filter, setFilter] = useState<'open' | 'all' | 'done' | 'overdue' | 'starred'>('open')
 
   useEffect(() => {
     const isNewTaskRoute = location.pathname === '/tasks/new'
@@ -71,6 +73,7 @@ export function TasksPage() {
       .filter((task) => {
         if (filter === 'done') return task.status === 'done'
         if (filter === 'open') return task.status !== 'done'
+        if (filter === 'starred') return task.starred
 
         if (filter === 'overdue') {
           if (!task.due_date || task.status === 'done') return false
@@ -136,7 +139,7 @@ export function TasksPage() {
         />
 
         <div className="ml-auto flex rounded-lg border-[0.5px] border-[var(--border)] bg-white p-[3px]">
-          {(['open', 'all', 'done', 'overdue'] as const).map((item) => (
+          {(['open', 'all', 'done', 'overdue', 'starred'] as const).map((item) => (
             <button
               key={item}
               type="button"
@@ -166,15 +169,24 @@ export function TasksPage() {
                   setSelectedTask(item)
                   navigate(`/tasks/${item.id}`)
                 }}
-                onDelete={async (item) => {
-                  const { error } = await deleteTask(item.id)
+                onArchive={async (item) => {
+                  const { error } = await archiveTask(item.id)
 
                   if (error) {
-                    notify(`Task delete failed: ${error.message}`)
+                    notify(`Task archive failed: ${error.message}`)
                     return
                   }
 
-                  notify('Task deleted')
+                  notify('Task archived')
+                }}
+                onStar={async (item) => {
+                  const { error } = await updateTask(item.id, {
+                    starred: !item.starred,
+                  })
+
+                  if (error) {
+                    notify(`Task update failed: ${error.message}`)
+                  }
                 }}
                 onToggle={async (item) => {
                   const nextStatus: TaskStatus =
@@ -215,8 +227,11 @@ export function TasksPage() {
                 due_date: patch.due_date ?? null,
                 estimated_minutes: patch.estimated_minutes ?? 30,
                 starred: patch.starred ?? false,
+                archived: false,
                 contact_id: patch.contact_id ?? null,
                 goal_id: patch.goal_id ?? null,
+                content_item_id: patch.content_item_id ?? null,
+                meeting_id: patch.meeting_id ?? null,
               })
 
           if (result.error) {
