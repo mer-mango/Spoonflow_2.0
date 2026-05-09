@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useContacts, type Contact } from '../hooks/useContacts'
 import { ContactModal } from '../components/contacts/ContactModal'
 import { useToast } from '../components/shared/Toast'
-import { useTasks } from '../hooks/useTasks'
+import { useTasks, type Task } from '../hooks/useTasks'
 
 function initials(name: string) {
   return name
@@ -37,6 +37,10 @@ function isOverdue(value?: string | null) {
   date.setHours(0, 0, 0, 0)
 
   return date.getTime() < today.getTime()
+}
+
+function isActiveTask(task: Task) {
+  return task.status !== 'done' && !task.archived
 }
 
 function exportContactsCsv(contacts: Contact[]) {
@@ -124,6 +128,8 @@ export function ContactsPage() {
 
     tasks.forEach((task) => {
       if (!task.contact_id) return
+      if (!isActiveTask(task)) return
+
       counts.set(task.contact_id, (counts.get(task.contact_id) ?? 0) + 1)
     })
 
