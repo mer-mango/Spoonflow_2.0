@@ -43,6 +43,8 @@ export type TaskUpdateInput = Partial<
   >
 >
 
+const TASKS_CHANGED_EVENT = 'spoonflow:tasks-changed'
+
 const TASK_SELECT = `
   id,
   title,
@@ -60,6 +62,10 @@ const TASK_SELECT = `
   created_at,
   updated_at
 `
+
+function notifyTasksChanged() {
+  window.dispatchEvent(new Event(TASKS_CHANGED_EVENT))
+}
 
 function cleanText(value?: string | null) {
   const cleaned = value?.trim()
@@ -106,9 +112,11 @@ function prepareTaskUpdate(patch: TaskUpdateInput) {
   if ('status' in patch) payload.status = normalizeStatus(patch.status)
   if ('task_type' in patch) payload.task_type = cleanText(patch.task_type)
   if ('due_date' in patch) payload.due_date = patch.due_date || null
+
   if ('estimated_minutes' in patch) {
     payload.estimated_minutes = normalizeMinutes(patch.estimated_minutes)
   }
+
   if ('starred' in patch) payload.starred = Boolean(patch.starred)
   if ('archived' in patch) payload.archived = Boolean(patch.archived)
   if ('contact_id' in patch) payload.contact_id = patch.contact_id ?? null
@@ -197,6 +205,18 @@ export function useTasks() {
     void loadTasks()
   }, [loadTasks])
 
+  useEffect(() => {
+    const handleTasksChanged = () => {
+      void loadTasks()
+    }
+
+    window.addEventListener(TASKS_CHANGED_EVENT, handleTasksChanged)
+
+    return () => {
+      window.removeEventListener(TASKS_CHANGED_EVENT, handleTasksChanged)
+    }
+  }, [loadTasks])
+
   const createTask = useCallback(async (payload: TaskInput) => {
     const {
       data: { user },
@@ -220,11 +240,14 @@ export function useTasks() {
 
     if (!error && data) {
       const task = data as Task
+
       if (task.archived) {
         setArchivedTasks((prev) => sortTasks([task, ...prev]))
       } else {
         setTasks((prev) => sortTasks([task, ...prev]))
       }
+
+      notifyTasksChanged()
     }
 
     return { data, error }
@@ -247,7 +270,12 @@ export function useTasks() {
         }
 
         const exists = prev.some((task) => task.id === id)
-        return sortTasks(exists ? prev.map((task) => (task.id === id ? updatedTask : task)) : [updatedTask, ...prev])
+
+        return sortTasks(
+          exists
+            ? prev.map((task) => (task.id === id ? updatedTask : task))
+            : [updatedTask, ...prev],
+        )
       })
 
       setArchivedTasks((prev) => {
@@ -256,8 +284,15 @@ export function useTasks() {
         }
 
         const exists = prev.some((task) => task.id === id)
-        return sortTasks(exists ? prev.map((task) => (task.id === id ? updatedTask : task)) : [updatedTask, ...prev])
+
+        return sortTasks(
+          exists
+            ? prev.map((task) => (task.id === id ? updatedTask : task))
+            : [updatedTask, ...prev],
+        )
       })
+
+      notifyTasksChanged()
     }
 
     return { data, error }
@@ -283,6 +318,7 @@ export function useTasks() {
     if (!error) {
       setTasks((prev) => prev.filter((task) => task.id !== id))
       setArchivedTasks((prev) => prev.filter((task) => task.id !== id))
+      notifyTasksChanged()
     }
 
     return { error }
@@ -317,6 +353,8 @@ export function useTasks() {
 
         return sortTasks(merged)
       })
+
+      notifyTasksChanged()
     }
 
     return { data, error }
@@ -330,6 +368,7 @@ export function useTasks() {
     if (!error) {
       setTasks((prev) => prev.filter((task) => !ids.includes(task.id)))
       setArchivedTasks((prev) => prev.filter((task) => !ids.includes(task.id)))
+      notifyTasksChanged()
     }
 
     return { error }
@@ -350,12 +389,12 @@ export function useTasks() {
   )
 
   const openTasks = useMemo(
-    () => tasks.filter((task) => task.status !== 'done'),
+    () => tasks.filter((task) => task.status !== 'done' && !task.archived),
     [tasks],
   )
 
   const doneTasks = useMemo(
-    () => tasks.filter((task) => task.status === 'done'),
+    () => tasks.filter((task) => task.status === 'done' && !task.archived),
     [tasks],
   )
 
@@ -366,11 +405,11 @@ export function useTasks() {
 
   const todayTasks = useMemo(() => {
     const todayKey = getTodayKey()
-    return tasks.filter((task) => task.due_date === todayKey)
+    return tasks.filter((task) => task.due_date === todayKey && !task.archived)
   }, [tasks])
 
   const starredTasks = useMemo(
-    () => tasks.filter((task) => task.starred),
+    () => tasks.filter((task) => task.starred && !task.archived),
     [tasks],
   )
 
