@@ -1,4 +1,3 @@
-import { Badge } from './Badge'
 import type { Task } from '../../hooks/useTasks'
 
 type TaskCardProps = {
@@ -31,11 +30,11 @@ function statusLabel(status: Task['status']) {
   return 'Done'
 }
 
-function statusVariant(status: Task['status']) {
-  if (status === 'toDo') return 'todo'
-  if (status === 'inProgress') return 'inProgress'
-  if (status === 'awaitingReply') return 'awaitingReply'
-  return 'done'
+function statusBadgeClass(status: Task['status']) {
+  if (status === 'toDo') return 'bg-[rgba(193,152,173,0.2)] text-[#9f6e89]'
+  if (status === 'inProgress') return 'bg-[rgba(100,132,161,0.16)] text-[#6684a1]'
+  if (status === 'awaitingReply') return 'bg-[#eee9e1] text-[#7f786f]'
+  return 'bg-[rgba(143,167,144,0.18)] text-[#6f8d70]'
 }
 
 function dateBoxParts(date: string | null) {
@@ -83,7 +82,7 @@ function ArchiveIcon() {
   return (
     <svg
       viewBox="0 0 16 16"
-      className="h-4 w-4"
+      className="h-4.5 w-4.5"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.7"
@@ -139,13 +138,13 @@ export function TaskCard({
 
   return (
     <article
-      className={`group grid cursor-pointer grid-cols-[58px_1fr_auto] overflow-hidden rounded-[10px] border-[0.5px] border-[var(--border)] bg-white transition hover:shadow-[0_2px_10px_rgba(0,0,0,0.08)] ${
+      className={`group grid cursor-pointer grid-cols-[58px_1fr_48px] overflow-hidden rounded-[12px] border-[0.5px] border-[var(--border)] bg-white transition hover:shadow-[0_2px_10px_rgba(0,0,0,0.08)] ${
         done ? 'opacity-60' : ''
       }`}
       onClick={() => onEdit(task)}
     >
       <div
-        className={`flex min-h-[82px] flex-col items-center justify-center px-1 text-center text-white ${
+        className={`flex min-h-[88px] flex-col items-center justify-center px-1 text-center text-white ${
           !dateParts.hasDate
             ? 'bg-[#d8d5cf]'
             : dateParts.overdue
@@ -161,12 +160,12 @@ export function TaskCard({
         </span>
       </div>
 
-      <div className="min-w-0 p-3.5">
-        <div className="flex items-start gap-2.5">
+      <div className="min-w-0 px-4 py-3.5">
+        <div className="flex items-start gap-3">
           <button
             type="button"
             aria-label={task.starred ? 'Unstar task' : 'Star task'}
-            className={`mt-0.5 flex h-5 w-5 min-w-5 items-center justify-center text-[18px] leading-none transition ${
+            className={`mt-[1px] flex h-6 w-6 shrink-0 items-center justify-center text-[19px] leading-none transition ${
               task.starred
                 ? 'text-[#f0c040]'
                 : 'text-[#d8d5cf] hover:text-[#b8b3aa]'
@@ -180,13 +179,31 @@ export function TaskCard({
           </button>
 
           <div className="min-w-0 flex-1">
-            <h3
-              className={`min-w-0 truncate text-[18px] font-semibold leading-snug ${
-                done ? 'line-through text-[var(--muted)]' : 'text-[var(--text)]'
-              }`}
-            >
-              {task.title}
-            </h3>
+            <div className="flex min-w-0 items-start gap-3">
+              <h3
+                className={`min-w-0 flex-1 truncate text-[18px] font-semibold leading-snug ${
+                  done ? 'line-through text-[var(--muted)]' : 'text-[var(--text)]'
+                }`}
+              >
+                {task.title}
+              </h3>
+
+              <button
+                type="button"
+                className={`mt-[2px] flex h-6 w-6 shrink-0 items-center justify-center rounded border-[1.5px] transition ${
+                  done
+                    ? 'border-[var(--done)] bg-[var(--done)]'
+                    : 'border-[#c8c5c0] bg-white hover:border-[var(--tasks)]'
+                }`}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onToggle(task)
+                }}
+                aria-label="Toggle task status"
+              >
+                {done ? <span className="text-[12px] leading-none text-white">✓</span> : null}
+              </button>
+            </div>
 
             {task.notes && (
               <p className="mt-1 line-clamp-1 text-[12px] text-[var(--muted)]">
@@ -195,12 +212,14 @@ export function TaskCard({
             )}
 
             <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-              <Badge label={statusLabel(task.status)} variant={statusVariant(task.status)} />
+              <span className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold ${statusBadgeClass(task.status)}`}>
+                {statusLabel(task.status)}
+              </span>
 
               {contactName && (
                 <button
                   type="button"
-                  className={`inline-flex items-center gap-1 rounded bg-[rgba(139,165,168,0.16)] px-2 py-1 text-[10.5px] font-medium text-[#6f8f92] ${
+                  className={`inline-flex items-center gap-1 rounded-full bg-[rgba(139,165,168,0.16)] px-2.5 py-1 text-[10.5px] font-medium text-[#6f8f92] ${
                     onContactClick && linkedContactId
                       ? 'transition hover:bg-[rgba(139,165,168,0.24)] hover:text-[#54777a]'
                       : ''
@@ -220,50 +239,34 @@ export function TaskCard({
               )}
 
               {task.task_type && (
-                <span className="rounded bg-[#f5f3f0] px-2 py-1 text-[10.5px] font-medium text-[#8d8982]">
+                <span className="rounded-full bg-[#f3f2ef] px-2.5 py-1 text-[10.5px] font-medium text-[#8a867f]">
                   {taskTypeLabels[task.task_type] ?? task.task_type}
                 </span>
               )}
 
               <span
-                className={`rounded px-2 py-1 text-[10.5px] ${
+                className={`rounded-full px-2.5 py-1 text-[10.5px] font-medium ${
                   dateParts.overdue
                     ? 'bg-[rgba(201,136,142,0.13)] text-[#c9888e]'
-                    : 'bg-[#f5f3f0] text-[var(--muted)]'
+                    : 'bg-[#f3f2ef] text-[var(--muted)]'
                 }`}
               >
                 {dateParts.overdue ? '⚠ ' : ''}
                 {dueDateLabel(task.due_date)}
               </span>
 
-              <span className="rounded bg-[#f5f3f0] px-2 py-1 text-[10.5px] text-[var(--muted)]">
+              <span className="rounded-full bg-[#f3f2ef] px-2.5 py-1 text-[10.5px] font-medium text-[var(--muted)]">
                 {task.estimated_minutes}m
               </span>
             </div>
           </div>
-
-          <button
-            type="button"
-            className={`mt-0.5 flex h-5 w-5 min-w-5 items-center justify-center rounded border-[1.5px] ${
-              done
-                ? 'border-[var(--done)] bg-[var(--done)]'
-                : 'border-[#c8c5c0] bg-white'
-            }`}
-            onClick={(event) => {
-              event.stopPropagation()
-              onToggle(task)
-            }}
-            aria-label="Toggle task status"
-          >
-            {done ? <span className="text-[11px] text-white">✓</span> : null}
-          </button>
         </div>
       </div>
 
       {(onArchive || onDelete) && (
         <button
           type="button"
-          className="flex items-center px-3 text-[#bbb6ad] opacity-80 transition hover:text-[var(--tasks)]"
+          className="flex items-start justify-center px-3 pt-[18px] text-[#bbb6ad] opacity-80 transition hover:text-[var(--tasks)]"
           onClick={(event) => {
             event.stopPropagation()
             handleArchiveOrDelete()
