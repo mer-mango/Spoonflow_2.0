@@ -88,7 +88,7 @@ export function ContactsPage() {
   const location = useLocation()
 
   const { contacts, isLoading, createContact, updateContact, importContactsCsv } = useContacts()
-  const { tasks } = useTasks()
+  const { tasks, loadTasks } = useTasks()
   const { notify } = useToast()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
