@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { useTasks, type Task } from '../hooks/useTasks'
+import { useTasks } from '../hooks/useTasks'
 
 type SettingsSection =
   | 'profile'
@@ -84,12 +84,7 @@ export function SettingsPage() {
   const [fathomMeetings, setFathomMeetings] = useState<FathomMeeting[]>([])
   const [isSyncingFathom, setIsSyncingFathom] = useState(false)
   const [isLoadingMeetings, setIsLoadingMeetings] = useState(false)
-  const {
-  archivedTasks,
-  loadArchivedTasks,
-  restoreTask,
-  deleteTask,
-} = useTasks()
+  const { loadArchivedTasks } = useTasks()
 
   const webhookUrl = useMemo(() => getFathomWebhookUrl(), [])
 
