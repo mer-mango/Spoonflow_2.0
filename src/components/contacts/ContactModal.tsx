@@ -19,6 +19,7 @@ type Props = {
   onClose: () => void
   onCreate: (payload: EditableContactFields) => Promise<MutationResult>
   onUpdate: (contactId: string, patch: ContactUpdateInput) => Promise<MutationResult>
+  onTasksChanged?: () => Promise<unknown> | void
 }
 
 type Tab = 'information' | 'interactions' | 'notes' | 'tasks' | 'nurture'
@@ -169,7 +170,14 @@ function blankTaskForContact(contactId: string): Task {
   }
 }
 
-export function ContactModal({ open, contact, onClose, onCreate, onUpdate }: Props) {
+export function ContactModal({
+  open,
+  contact,
+  onClose,
+  onCreate,
+  onUpdate,
+  onTasksChanged,
+}: Props) {
   const { tasks, createTask, updateTask, archiveTask } = useTasks()
 
   const isNew = !contact
