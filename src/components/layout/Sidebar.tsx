@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { useTasks } from '../../hooks/useTasks'
 
 type IconName =
   | 'today'
@@ -19,16 +20,6 @@ type NavItem = {
   icon: IconName
   count?: number
 }
-
-const navItems: NavItem[] = [
-  { label: 'Today', path: '/today', color: '#45556c', icon: 'today' },
-  { label: 'Contacts', path: '/contacts', color: '#8ba5a8', icon: 'contacts' },
-  { label: 'Calendar', path: '/calendar', color: '#6684a1', icon: 'calendar' },
-  { label: 'Tasks', path: '/tasks', color: '#c198ad', icon: 'tasks', count: 0 },
-  { label: 'Content', path: '/content', color: '#e2b7be', icon: 'content', count: 0 },
-  { label: 'Nurture', path: '/nurture', color: '#8fa790', icon: 'nurture', count: 0 },
-  { label: 'Goals', path: '/goals', color: '#a389aa', icon: 'goals', count: 0 },
-]
 
 function Icon({ name }: { name: IconName }) {
   const common = {
@@ -308,6 +299,24 @@ function FooterIcon({ icon }: { icon: IconName }) {
 }
 
 export function Sidebar() {
+  const { openTasks } = useTasks()
+
+  const navItems: NavItem[] = [
+    { label: 'Today', path: '/today', color: '#45556c', icon: 'today' },
+    { label: 'Contacts', path: '/contacts', color: '#8ba5a8', icon: 'contacts' },
+    { label: 'Calendar', path: '/calendar', color: '#6684a1', icon: 'calendar' },
+    {
+      label: 'Tasks',
+      path: '/tasks',
+      color: '#c198ad',
+      icon: 'tasks',
+      count: openTasks.length,
+    },
+    { label: 'Content', path: '/content', color: '#e2b7be', icon: 'content' },
+    { label: 'Nurture', path: '/nurture', color: '#8fa790', icon: 'nurture' },
+    { label: 'Goals', path: '/goals', color: '#a389aa', icon: 'goals' },
+  ]
+
   return (
     <aside className="hidden h-screen w-[160px] min-w-[160px] shrink-0 flex-col border-r border-[var(--border)] bg-white lg:flex">
       <div className="flex items-center gap-2.5 border-b border-[var(--border)] px-3 pb-4 pt-4">
@@ -320,36 +329,36 @@ export function Sidebar() {
       <nav className="flex-1 px-2 py-3">
         {navItems.map((item) => (
           <NavLink
-  key={item.path}
-  to={item.path}
-  className={({ isActive }) =>
-    `mb-1 flex cursor-pointer items-center gap-2 rounded-full px-2.5 py-2 text-[12.5px] leading-none transition-all ${
-      isActive
-        ? 'font-medium text-white shadow-[0_6px_14px_rgba(69,85,108,0.18)]'
-        : 'text-[#26344f] hover:bg-black/[0.04]'
-    }`
-  }
-  style={({ isActive }) => ({
-    backgroundColor: isActive ? item.color : undefined,
-  })}
->
-  {({ isActive }) => (
-    <>
-      <IconBubble color={item.color} icon={item.icon} active={isActive} />
-      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              `mb-1 flex cursor-pointer items-center gap-2 rounded-full px-2.5 py-2 text-[12.5px] leading-none transition-all ${
+                isActive
+                  ? 'font-medium text-white shadow-[0_6px_14px_rgba(69,85,108,0.18)]'
+                  : 'text-[#26344f] hover:bg-black/[0.04]'
+              }`
+            }
+            style={({ isActive }) => ({
+              backgroundColor: isActive ? item.color : undefined,
+            })}
+          >
+            {({ isActive }) => (
+              <>
+                <IconBubble color={item.color} icon={item.icon} active={isActive} />
+                <span className="min-w-0 flex-1 truncate">{item.label}</span>
 
-      {typeof item.count === 'number' && (
-        <span
-          className={`text-[11px] leading-none ${
-            isActive ? 'text-white/80' : 'text-[var(--muted)]'
-          }`}
-        >
-          {item.count}
-        </span>
-      )}
-    </>
-  )}
-</NavLink>
+                {typeof item.count === 'number' && item.count > 0 && (
+                  <span
+                    className={`text-[11px] leading-none ${
+                      isActive ? 'text-white/80' : 'text-[var(--muted)]'
+                    }`}
+                  >
+                    {item.count}
+                  </span>
+                )}
+              </>
+            )}
+          </NavLink>
         ))}
       </nav>
 
