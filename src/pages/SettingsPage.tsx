@@ -58,6 +58,14 @@ function formatDate(value?: string | null) {
   }
 }
 
+function getMeetingTitle(meeting: FathomMeeting) {
+  return (
+    meeting.title ||
+    meeting.meeting_title ||
+    meeting.name ||
+    'Untitled Fathom meeting'
+  )
+}
 function getMeetingDate(meeting: FathomMeeting) {
   return (
     meeting.started_at ||
