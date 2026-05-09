@@ -4,11 +4,13 @@ import type { Task } from '../../hooks/useTasks'
 type TaskCardProps = {
   task: Task
   contactName?: string | null
+  contactId?: string | null
   onToggle: (task: Task) => void
   onEdit: (task: Task) => void
   onArchive?: (task: Task) => void
   onDelete?: (task: Task) => void
   onStar?: (task: Task) => void
+  onContactClick?: (contactId: string) => void
   showContact?: boolean
   showGoal?: boolean
 }
@@ -112,11 +114,13 @@ function ContactIcon() {
 export function TaskCard({
   task,
   contactName,
+  contactId,
   onToggle,
   onEdit,
   onArchive,
   onDelete,
   onStar,
+  onContactClick,
 }: TaskCardProps) {
   const done = task.status === 'done'
   const dateParts = dateBoxParts(task.due_date)
@@ -131,6 +135,8 @@ export function TaskCard({
       onDelete(task)
     }
   }
+
+  const linkedContactId = contactId ?? task.contact_id
 
   return (
     <article
@@ -211,10 +217,25 @@ export function TaskCard({
               <Badge label={statusLabel(task.status)} variant={statusVariant(task.status)} />
 
               {contactName && (
-                <span className="inline-flex items-center gap-1 rounded bg-[rgba(139,165,168,0.16)] px-2 py-1 text-[10.5px] font-medium text-[#6f8f92]">
+                <button
+                  type="button"
+                  className={`inline-flex items-center gap-1 rounded bg-[rgba(139,165,168,0.16)] px-2 py-1 text-[10.5px] font-medium text-[#6f8f92] ${
+                    onContactClick && linkedContactId
+                      ? 'transition hover:bg-[rgba(139,165,168,0.24)] hover:text-[#54777a]'
+                      : ''
+                  }`}
+                  onClick={(event) => {
+                    event.stopPropagation()
+
+                    if (onContactClick && linkedContactId) {
+                      onContactClick(linkedContactId)
+                    }
+                  }}
+                  title={linkedContactId ? 'Open contact profile' : undefined}
+                >
                   <ContactIcon />
                   {contactName}
-                </span>
+                </button>
               )}
 
               {task.task_type && (
