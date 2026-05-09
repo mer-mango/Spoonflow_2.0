@@ -456,7 +456,7 @@ export function TasksPage() {
             className="rounded-full bg-white px-3 py-1.5 text-[11.5px] font-medium text-[var(--text)] shadow-sm transition hover:bg-[#f7f4f2]"
             onClick={() => void handleBulkStatus('toDo')}
           >
-            Mark to do
+            Mark active
           </button>
 
           <button
