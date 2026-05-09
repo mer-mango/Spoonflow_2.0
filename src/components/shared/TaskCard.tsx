@@ -84,7 +84,7 @@ function ArchiveIcon() {
   return (
     <svg
       viewBox="0 0 16 16"
-      className="h-[18px] w-[18px]"
+      className="h-[16px] w-[16px]"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.7"
@@ -141,7 +141,7 @@ export function TaskCard({
 
   return (
     <article
-      className={`group grid cursor-pointer grid-cols-[58px_1fr_48px] overflow-hidden rounded-[12px] border-[0.5px] border-[var(--border)] bg-white transition hover:shadow-[0_2px_10px_rgba(0,0,0,0.08)] ${
+      className={`group grid cursor-pointer grid-cols-[58px_1fr_40px] overflow-hidden rounded-[12px] border-[0.5px] border-[var(--border)] bg-white transition hover:shadow-[0_2px_10px_rgba(0,0,0,0.08)] ${
         done ? 'opacity-60' : ''
       }`}
       onClick={() => onEdit(task)}
@@ -193,10 +193,10 @@ export function TaskCard({
 
               <button
                 type="button"
-                className={`mt-[2px] flex h-6 w-6 shrink-0 items-center justify-center rounded border-[1.5px] transition ${
+                className={`mt-[4px] flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded border-[1.4px] transition ${
                   selected
-                    ? 'border-[var(--tasks)] bg-[var(--tasks)]'
-                    : 'border-[#c8c5c0] bg-white hover:border-[var(--tasks)]'
+                    ? 'border-[var(--tasks)] bg-[var(--tasks)] opacity-100'
+                    : 'border-[#c8c5c0] bg-white opacity-0 hover:border-[var(--tasks)] group-hover:opacity-100'
                 }`}
                 onClick={(event) => {
                   event.stopPropagation()
@@ -205,7 +205,7 @@ export function TaskCard({
                 aria-label={selected ? 'Deselect task' : 'Select task'}
                 title={selected ? 'Deselect task' : 'Select task'}
               >
-                {selected ? <span className="text-[12px] leading-none text-white">✓</span> : null}
+                {selected ? <span className="text-[10px] leading-none text-white">✓</span> : null}
               </button>
             </div>
 
@@ -270,7 +270,7 @@ export function TaskCard({
       {(onArchive || onDelete) && (
         <button
           type="button"
-          className="flex items-start justify-center px-3 pt-[18px] text-[#bbb6ad] opacity-80 transition hover:text-[var(--tasks)]"
+          className="flex items-start justify-center px-3 pt-[19px] text-[#bbb6ad] opacity-0 transition hover:text-[var(--tasks)] group-hover:opacity-80"
           onClick={(event) => {
             event.stopPropagation()
             handleArchiveOrDelete()
