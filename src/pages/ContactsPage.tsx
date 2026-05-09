@@ -449,14 +449,14 @@ export function ContactsPage() {
         )}
       </div>
 
-      <ContactModal
-  open={modalOpen}
-  contact={selected}
-  onClose={closeContactModal}
-  onCreate={createContact}
-  onUpdate={updateContact}
-  onTasksChanged={loadTasks}
-/>
+        <ContactModal
+        open={modalOpen}
+        contact={selected}
+        onClose={closeContactModal}
+        onCreate={createContact}
+        onUpdate={updateContact}
+        onTasksChanged={loadTasks}
+      />
     </section>
   )
 }
