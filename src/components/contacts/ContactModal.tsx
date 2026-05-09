@@ -627,7 +627,7 @@ export function ContactModal({
 
                           void onTasksChanged?.()
                         }}
-                          onQuickUpdate={async (item, patch) => {
+                        onQuickUpdate={async (item, patch) => {
                           const { error } = await updateTask(item.id, patch)
 
                           if (error) {
