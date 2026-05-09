@@ -232,7 +232,6 @@ export function SettingsPage() {
   { id: 'archive', label: 'Archive', group: 'Admin' },
   { id: 'data', label: 'Data & Privacy', group: 'Admin' },
 ]
-  ]
 
   const groupedSections = sections.reduce(
     (acc, item) => {
@@ -266,14 +265,16 @@ export function SettingsPage() {
                     type="button"
                     onClick={() => {
                       setActiveSection(item.id)
+
                       if (item.id === 'integrations') {
-  window.history.replaceState(null, '', '/settings/integrations')
-} else if (item.id === 'archive') {
-  window.history.replaceState(null, '', '/settings/archive')
-} else {
-  window.history.replaceState(null, '', '/settings')
-}
+                        window.history.replaceState(null, '', '/settings/integrations')
+                      } else if (item.id === 'archive') {
+                        window.history.replaceState(null, '', '/settings/archive')
+                      } else {
+                        window.history.replaceState(null, '', '/settings')
+                      }
                     }}
+
                     className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition ${
                       activeSection === item.id
                         ? 'bg-[#f5f1f4] font-medium text-[var(--jamie)]'
