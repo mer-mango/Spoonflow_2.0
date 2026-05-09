@@ -450,12 +450,13 @@ export function ContactsPage() {
       </div>
 
       <ContactModal
-        open={modalOpen}
-        contact={selected}
-        onClose={closeContactModal}
-        onCreate={createContact}
-        onUpdate={updateContact}
-      />
+  open={modalOpen}
+  contact={selected}
+  onClose={closeContactModal}
+  onCreate={createContact}
+  onUpdate={updateContact}
+  onTasksChanged={loadTasks}
+/>
     </section>
   )
 }
