@@ -29,6 +29,15 @@ type SortMode =
 
 type KanbanGroupBy = 'status' | 'taskType'
 
+type BulkTaskType =
+  | ''
+  | 'admin'
+  | 'outreach'
+  | 'client_work'
+  | 'business_development'
+  | 'schedule'
+  | 'other'
+
 const statusColumns: Array<{ id: TaskStatus; label: string }> = [
   { id: 'toDo', label: 'To Do' },
   { id: 'inProgress', label: 'In Progress' },
@@ -119,17 +128,21 @@ export function TasksPage() {
     updateTask,
     archiveTask,
     createTask,
+    bulkUpdateTasks,
+    bulkArchiveTasks,
   } = useTasks()
 
   const { contacts } = useContacts()
   const { notify } = useToast()
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
   const [query, setQuery] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [filter, setFilter] = useState<FilterMode>('open')
   const [sortMode, setSortMode] = useState<SortMode>('dueDate')
   const [kanbanGroupBy, setKanbanGroupBy] = useState<KanbanGroupBy>('status')
+  const [bulkTaskType, setBulkTaskType] = useState<BulkTaskType>('')
 
   const contactById = useMemo(() => {
     const map = new Map<string, string>()
@@ -194,6 +207,14 @@ export function TasksPage() {
     return sortTasks(filtered, sortMode)
   }, [tasks, filter, query, sortMode, contactById])
 
+  useEffect(() => {
+    setSelectedTaskIds((prev) =>
+      prev.filter((id) => filteredAndSortedTasks.some((task) => task.id === id)),
+    )
+  }, [filteredAndSortedTasks])
+
+  const selectedCount = selectedTaskIds.length
+
   const closeTaskModal = () => {
     setSelectedTask(null)
 
@@ -207,10 +228,67 @@ export function TasksPage() {
     navigate(`/tasks/${task.id}`)
   }
 
+  const toggleTaskSelection = (task: Task) => {
+    setSelectedTaskIds((prev) =>
+      prev.includes(task.id)
+        ? prev.filter((id) => id !== task.id)
+        : [...prev, task.id],
+    )
+  }
+
+  const clearSelectedTasks = () => {
+    setSelectedTaskIds([])
+    setBulkTaskType('')
+  }
+
+  const handleBulkArchive = async () => {
+    const { error } = await bulkArchiveTasks(selectedTaskIds)
+
+    if (error) {
+      notify(`Bulk archive failed: ${error.message}`)
+      return
+    }
+
+    notify(`${selectedCount} task${selectedCount === 1 ? '' : 's'} archived`)
+    clearSelectedTasks()
+  }
+
+  const handleBulkStatus = async (status: TaskStatus) => {
+    const { error } = await bulkUpdateTasks(selectedTaskIds, { status })
+
+    if (error) {
+      notify(`Bulk update failed: ${error.message}`)
+      return
+    }
+
+    notify(`${selectedCount} task${selectedCount === 1 ? '' : 's'} updated`)
+    clearSelectedTasks()
+  }
+
+  const handleBulkTaskType = async (taskType: BulkTaskType) => {
+    setBulkTaskType(taskType)
+
+    if (!taskType) return
+
+    const { error } = await bulkUpdateTasks(selectedTaskIds, {
+      task_type: taskType,
+    })
+
+    if (error) {
+      notify(`Bulk task type update failed: ${error.message}`)
+      return
+    }
+
+    notify(`${selectedCount} task${selectedCount === 1 ? '' : 's'} updated`)
+    clearSelectedTasks()
+  }
+
   const renderTaskCard = (task: Task) => (
     <TaskCard
       key={task.id}
       task={task}
+      selected={selectedTaskIds.includes(task.id)}
+      onSelect={toggleTaskSelection}
       contactName={task.contact_id ? contactById.get(task.contact_id) ?? null : null}
       contactId={task.contact_id}
       onContactClick={(contactId) => {
@@ -358,6 +436,68 @@ export function TasksPage() {
           {filteredAndSortedTasks.length} shown
         </span>
       </div>
+
+      {selectedCount > 0 && (
+        <div className="flex flex-wrap items-center gap-2 border-b-[0.5px] border-[rgba(193,152,173,0.25)] bg-[rgba(193,152,173,0.08)] px-5 py-3">
+          <span className="text-[12px] font-semibold text-[#9f6e89]">
+            {selectedCount} selected
+          </span>
+
+          <button
+            type="button"
+            className="rounded-full bg-white px-3 py-1.5 text-[11.5px] font-medium text-[var(--text)] shadow-sm transition hover:bg-[#f7f4f2]"
+            onClick={() => void handleBulkStatus('done')}
+          >
+            Mark done
+          </button>
+
+          <button
+            type="button"
+            className="rounded-full bg-white px-3 py-1.5 text-[11.5px] font-medium text-[var(--text)] shadow-sm transition hover:bg-[#f7f4f2]"
+            onClick={() => void handleBulkStatus('toDo')}
+          >
+            Mark to do
+          </button>
+
+          <button
+            type="button"
+            className="rounded-full bg-white px-3 py-1.5 text-[11.5px] font-medium text-[var(--text)] shadow-sm transition hover:bg-[#f7f4f2]"
+            onClick={() => void handleBulkStatus('awaitingReply')}
+          >
+            Awaiting reply
+          </button>
+
+          <select
+            value={bulkTaskType}
+            onChange={(event) => void handleBulkTaskType(event.target.value as BulkTaskType)}
+            className="rounded-full border border-white bg-white px-3 py-1.5 text-[11.5px] font-medium text-[var(--text)] shadow-sm outline-none"
+          >
+            <option value="">Change type...</option>
+            <option value="admin">Admin</option>
+            <option value="outreach">Outreach</option>
+            <option value="client_work">Client Work</option>
+            <option value="business_development">Business Development</option>
+            <option value="schedule">Schedule</option>
+            <option value="other">Other</option>
+          </select>
+
+          <button
+            type="button"
+            className="rounded-full bg-white px-3 py-1.5 text-[11.5px] font-medium text-[#a85c64] shadow-sm transition hover:bg-[#fbf3f4]"
+            onClick={() => void handleBulkArchive()}
+          >
+            Archive
+          </button>
+
+          <button
+            type="button"
+            className="ml-auto rounded-full px-3 py-1.5 text-[11.5px] font-medium text-[var(--muted)] transition hover:bg-white"
+            onClick={clearSelectedTasks}
+          >
+            Clear
+          </button>
+        </div>
+      )}
 
       <div className="p-4">
         {isLoading ? (
