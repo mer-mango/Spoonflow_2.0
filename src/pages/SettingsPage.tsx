@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useTasks, type Task } from '../hooks/useTasks'
 
 type SettingsSection =
   | 'profile'
   | 'integrations'
   | 'notifications'
   | 'jamie'
+  | 'archive'
   | 'data'
 
 type FathomMeeting = {
@@ -28,6 +30,7 @@ function getInitialSection(): SettingsSection {
   const path = window.location.pathname
 
   if (path.includes('/settings/integrations')) return 'integrations'
+  if (path.includes('/settings/archive')) return 'archive'
 
   return 'integrations'
 }
@@ -81,6 +84,12 @@ export function SettingsPage() {
   const [fathomMeetings, setFathomMeetings] = useState<FathomMeeting[]>([])
   const [isSyncingFathom, setIsSyncingFathom] = useState(false)
   const [isLoadingMeetings, setIsLoadingMeetings] = useState(false)
+  const {
+  archivedTasks,
+  loadArchivedTasks,
+  restoreTask,
+  deleteTask,
+} = useTasks()
 
   const webhookUrl = useMemo(() => getFathomWebhookUrl(), [])
 
@@ -137,6 +146,12 @@ export function SettingsPage() {
     void hydrateGoogleStatus()
     void loadFathomMeetings()
   }, [loadFathomMeetings])
+  
+  useEffect(() => {
+    if (activeSection === 'archive') {
+      void loadArchivedTasks()
+    }
+  }, [activeSection, loadArchivedTasks])
 
   const connectGoogleCalendar = async () => {
     setStatusMessage(null)
@@ -255,10 +270,12 @@ export function SettingsPage() {
                     onClick={() => {
                       setActiveSection(item.id)
                       if (item.id === 'integrations') {
-                        window.history.replaceState(null, '', '/settings/integrations')
-                      } else {
-                        window.history.replaceState(null, '', '/settings')
-                      }
+  window.history.replaceState(null, '', '/settings/integrations')
+} else if (item.id === 'archive') {
+  window.history.replaceState(null, '', '/settings/archive')
+} else {
+  window.history.replaceState(null, '', '/settings')
+}
                     }}
                     className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition ${
                       activeSection === item.id
