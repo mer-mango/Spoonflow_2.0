@@ -569,23 +569,13 @@ export function TodayPage() {
           <p className="mt-1 text-[11px] text-[var(--muted)]">{todayLongLabel()}</p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="rounded-full bg-[var(--jamie)] px-4 py-2 text-[11.5px] font-medium text-white"
-          >
-            Ask Jamie
-          </button>
-
-          <button
-            type="button"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--jamie)] text-lg leading-none text-white"
-            onClick={() => setOpenAdd(true)}
-            aria-label="Add activity"
-          >
-            +
-          </button>
-        </div>
+        <button
+  type="button"
+  className="rounded-full bg-[var(--tasks)] px-4 py-2 text-[11.5px] font-medium text-white shadow-sm transition hover:opacity-90"
+  onClick={() => setOpenAdd(true)}
+>
+  + New Timeline Activity
+      </button>      
       </header>
 
       <div className="space-y-3 p-5">
