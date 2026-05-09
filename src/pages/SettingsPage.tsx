@@ -75,11 +75,6 @@ function getMeetingDate(meeting: FathomMeeting) {
     null
   )
 }
-
-function getMeetingDate(meeting: FathomMeeting) {
-  return meeting.started_at || meeting.start_time || meeting.created_at || null
-}
-
 function getMeetingUrl(meeting: FathomMeeting) {
   return meeting.fathom_url || meeting.url || null
 }
