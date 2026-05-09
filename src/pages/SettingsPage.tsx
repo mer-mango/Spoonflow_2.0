@@ -221,15 +221,17 @@ export function SettingsPage() {
   }
 
   const sections: Array<{
-    id: SettingsSection
-    label: string
-    group: 'Workspace' | 'Preferences' | 'Admin'
-  }> = [
-    { id: 'profile', label: 'Profile', group: 'Workspace' },
-    { id: 'integrations', label: 'Integrations', group: 'Workspace' },
-    { id: 'notifications', label: 'Notifications', group: 'Preferences' },
-    { id: 'jamie', label: 'Jamie', group: 'Preferences' },
-    { id: 'data', label: 'Data & Privacy', group: 'Admin' },
+  id: SettingsSection
+  label: string
+  group: 'Workspace' | 'Preferences' | 'Admin'
+}> = [
+  { id: 'profile', label: 'Profile', group: 'Workspace' },
+  { id: 'integrations', label: 'Integrations', group: 'Workspace' },
+  { id: 'notifications', label: 'Notifications', group: 'Preferences' },
+  { id: 'jamie', label: 'Jamie', group: 'Preferences' },
+  { id: 'archive', label: 'Archive', group: 'Admin' },
+  { id: 'data', label: 'Data & Privacy', group: 'Admin' },
+]
   ]
 
   const groupedSections = sections.reduce(
