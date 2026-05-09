@@ -351,7 +351,7 @@ export function TasksPage() {
             Tasks
           </h1>
           <p className="mt-0.5 text-[11px] text-[var(--muted)]">
-            {openTasks.length} open task{openTasks.length === 1 ? '' : 's'}
+            {openTasks.length} active task{openTasks.length === 1 ? '' : 's'}
           </p>
         </div>
 
@@ -397,7 +397,7 @@ export function TasksPage() {
           onChange={(event) => setFilter(event.target.value as FilterMode)}
           className="rounded-[8px] border-[0.5px] border-[var(--border)] bg-white px-3 py-2 text-[12px] text-[var(--text)] outline-none focus:border-[rgba(193,152,173,0.5)]"
         >
-          <option value="open">Open</option>
+          <option value="open">Active</option>
           <option value="all">All</option>
           <option value="done">Done</option>
           <option value="overdue">Overdue</option>
