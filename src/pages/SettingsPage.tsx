@@ -17,6 +17,7 @@ type FathomMeeting = {
   started_at?: string | null
   start_time?: string | null
   created_at?: string | null
+  imported_at?: string | null
   fathom_url?: string | null
   url?: string | null
   summary?: string | null
@@ -57,12 +58,13 @@ function formatDate(value?: string | null) {
   }
 }
 
-function getMeetingTitle(meeting: FathomMeeting) {
+function getMeetingDate(meeting: FathomMeeting) {
   return (
-    meeting.title ||
-    meeting.meeting_title ||
-    meeting.name ||
-    'Untitled Fathom meeting'
+    meeting.started_at ||
+    meeting.start_time ||
+    meeting.created_at ||
+    meeting.imported_at ||
+    null
   )
 }
 
@@ -127,7 +129,7 @@ export function SettingsPage() {
       const { data, error } = await supabase
         .from('fathom_meetings')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('imported_at', { ascending: false })
         .limit(10)
 
       if (error) {
@@ -286,7 +288,6 @@ const handleDeleteTask = async (task: Task) => {
     label: string
     group: 'Workspace' | 'Preferences' | 'Admin'
   }> = [
-    { id: 'profile', label: 'Profile', group: 'Workspace' },
     { id: 'integrations', label: 'Integrations', group: 'Workspace' },
     { id: 'notifications', label: 'Notifications', group: 'Preferences' },
     { id: 'jamie', label: 'Jamie', group: 'Preferences' },
@@ -355,22 +356,6 @@ const handleDeleteTask = async (task: Task) => {
           {statusMessage && (
             <div className="mb-5 rounded-xl border border-[rgba(107,35,88,0.18)] bg-[rgba(107,35,88,0.06)] px-4 py-3 text-sm text-[var(--jamie)]">
               {statusMessage}
-            </div>
-          )}
-
-          {activeSection === 'profile' && (
-            <div>
-              <h2 className="text-2xl">Profile</h2>
-              <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
-                Workspace profile settings will live here.
-              </p>
-
-              <div className="mt-6 rounded-xl border border-[var(--border)] bg-white p-5">
-                <p className="font-medium">SpoonFlow workspace</p>
-                <p className="mt-1 text-sm text-[var(--muted)]">
-                  Your workspace is connected to Supabase and Vercel.
-                </p>
-              </div>
             </div>
           )}
 
@@ -480,7 +465,7 @@ const handleDeleteTask = async (task: Task) => {
     </div>
   </div>
 )}
-          {activeSection !== 'integrations' && activeSection !== 'archive' && (
+          {activeSection === 'integrations' && (
             <div>
               <h2 className="text-2xl">Integrations</h2>
               <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
