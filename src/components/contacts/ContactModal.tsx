@@ -22,6 +22,7 @@ type Props = {
 }
 
 type Tab = 'information' | 'interactions' | 'notes' | 'tasks' | 'nurture'
+type ContactTaskView = 'active' | 'done'
 
 const nurtureOptions = [
   { label: 'None', value: '' },
@@ -67,6 +68,14 @@ function isoFromDateInput(value: string) {
 
 function text(value?: string | null) {
   return value ?? ''
+}
+
+function isActiveTask(task: Task) {
+  return task.status !== 'done' && !task.archived
+}
+
+function isDoneTask(task: Task) {
+  return task.status === 'done' && !task.archived
 }
 
 function FieldLabel({ children }: { children: ReactNode }) {
@@ -165,6 +174,7 @@ export function ContactModal({ open, contact, onClose, onCreate, onUpdate }: Pro
 
   const isNew = !contact
   const [activeTab, setActiveTab] = useState<Tab>('information')
+  const [contactTaskView, setContactTaskView] = useState<ContactTaskView>('active')
   const [isSaving, setIsSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
@@ -186,9 +196,22 @@ export function ContactModal({ open, contact, onClose, onCreate, onUpdate }: Pro
   const [starred, setStarred] = useState(false)
 
   const contactTasks = useMemo(
-    () => tasks.filter((task) => task.contact_id === contact?.id),
+    () => tasks.filter((task) => task.contact_id === contact?.id && !task.archived),
     [tasks, contact?.id],
   )
+
+  const activeContactTasks = useMemo(
+    () => contactTasks.filter(isActiveTask),
+    [contactTasks],
+  )
+
+  const doneContactTasks = useMemo(
+    () => contactTasks.filter(isDoneTask),
+    [contactTasks],
+  )
+
+  const visibleContactTasks =
+    contactTaskView === 'active' ? activeContactTasks : doneContactTasks
 
   const displayName = name.trim() || 'New Contact'
   const displayRole = [role, company].filter(Boolean).join(' · ')
@@ -199,6 +222,7 @@ export function ContactModal({ open, contact, onClose, onCreate, onUpdate }: Pro
     if (!open) return
 
     setActiveTab('information')
+    setContactTaskView('active')
     setErrorMessage(null)
     setSelectedTask(null)
 
@@ -304,7 +328,7 @@ export function ContactModal({ open, contact, onClose, onCreate, onUpdate }: Pro
     { id: 'information', label: 'Information' },
     { id: 'interactions', label: 'Interactions' },
     { id: 'notes', label: 'Notes' },
-    { id: 'tasks', label: 'Tasks', count: contactTasks.length },
+    { id: 'tasks', label: 'Tasks', count: activeContactTasks.length },
     { id: 'nurture', label: 'Nurture' },
   ]
 
@@ -519,7 +543,7 @@ export function ContactModal({ open, contact, onClose, onCreate, onUpdate }: Pro
 
             {activeTab === 'tasks' && (
               <div className="space-y-3">
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="font-serif text-xl">Tasks</p>
                     <p className="mt-1 text-sm text-[var(--muted)]">
@@ -527,30 +551,53 @@ export function ContactModal({ open, contact, onClose, onCreate, onUpdate }: Pro
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    disabled={!contact?.id}
-                    onClick={() => {
-                      if (!contact?.id) {
-                        setErrorMessage('Save this contact before adding tasks.')
-                        return
-                      }
+                  <div className="flex items-center gap-2">
+                    <div className="flex rounded-lg border border-[var(--border)] bg-white p-[3px]">
+                      {(['active', 'done'] as const).map((view) => (
+                        <button
+                          key={view}
+                          type="button"
+                          onClick={() => setContactTaskView(view)}
+                          className={`rounded-md px-3 py-1.5 text-xs capitalize ${
+                            contactTaskView === view
+                              ? 'bg-[var(--tasks)] text-white'
+                              : 'text-[var(--muted)] hover:bg-[#f5f3f0]'
+                          }`}
+                        >
+                          {view === 'active'
+                            ? `Active (${activeContactTasks.length})`
+                            : `Done (${doneContactTasks.length})`}
+                        </button>
+                      ))}
+                    </div>
 
-                      setSelectedTask(blankTaskForContact(contact.id))
-                    }}
-                    className="rounded-lg bg-[rgba(193,152,173,0.18)] px-3 py-2 text-xs font-semibold text-[#9f6e89] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    + New Task
-                  </button>
+                    <button
+                      type="button"
+                      disabled={!contact?.id}
+                      onClick={() => {
+                        if (!contact?.id) {
+                          setErrorMessage('Save this contact before adding tasks.')
+                          return
+                        }
+
+                        setSelectedTask(blankTaskForContact(contact.id))
+                      }}
+                      className="rounded-lg bg-[rgba(193,152,173,0.18)] px-3 py-2 text-xs font-semibold text-[#9f6e89] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      + New Task
+                    </button>
+                  </div>
                 </div>
 
-                {contactTasks.length === 0 ? (
+                {visibleContactTasks.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-[var(--border)] bg-white p-6 text-sm text-[var(--muted)]">
-                    No tasks linked to this contact yet.
+                    {contactTaskView === 'active'
+                      ? 'No active tasks linked to this contact.'
+                      : 'No done tasks linked to this contact yet.'}
                   </div>
                 ) : (
                   <div className="grid gap-2">
-                    {contactTasks.map((task) => (
+                    {visibleContactTasks.map((task) => (
                       <TaskCard
                         key={task.id}
                         task={task}
