@@ -302,8 +302,10 @@ export function ContactModal({
 
       if (error) {
         setErrorMessage(`Task save failed: ${error.message}`)
+        return
       }
 
+      void onTasksChanged?.()
       return
     }
 
@@ -329,7 +331,10 @@ export function ContactModal({
 
     if (error) {
       setErrorMessage(`Task create failed: ${error.message}`)
+      return
     }
+
+    void onTasksChanged?.()
   }
 
   const tabs: Array<{ id: Tab; label: string; count?: number }> = [
@@ -610,13 +615,17 @@ export function ContactModal({
                         key={task.id}
                         task={task}
                         contactName={contact?.name ?? null}
+                        contactId={contact?.id ?? null}
                         onEdit={(item) => setSelectedTask(item)}
                         onArchive={async (item) => {
                           const { error } = await archiveTask(item.id)
 
                           if (error) {
                             setErrorMessage(`Task archive failed: ${error.message}`)
+                            return
                           }
+
+                          void onTasksChanged?.()
                         }}
                         onStar={async (item) => {
                           const { error } = await updateTask(item.id, {
@@ -625,7 +634,10 @@ export function ContactModal({
 
                           if (error) {
                             setErrorMessage(`Task update failed: ${error.message}`)
+                            return
                           }
+
+                          void onTasksChanged?.()
                         }}
                         onToggle={async (item) => {
                           const { error } = await updateTask(item.id, {
@@ -634,7 +646,10 @@ export function ContactModal({
 
                           if (error) {
                             setErrorMessage(`Task update failed: ${error.message}`)
+                            return
                           }
+
+                          void onTasksChanged?.()
                         }}
                       />
                     ))}
