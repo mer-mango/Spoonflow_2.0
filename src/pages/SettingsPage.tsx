@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { useTasks } from '../hooks/useTasks'
+import { useTasks, type Task } from '../hooks/useTasks'
 
 type SettingsSection =
   | 'profile'
@@ -74,6 +74,34 @@ function getMeetingDate(meeting: FathomMeeting) {
 function getMeetingUrl(meeting: FathomMeeting) {
   return meeting.fathom_url || meeting.url || null
 }
+function formatShortDate(value?: string | null) {
+  if (!value) return '—'
+
+  try {
+    return new Date(`${value}T00:00:00`).toLocaleDateString([], {
+      month: 'short',
+      day: 'numeric',
+    })
+  } catch {
+    return '—'
+  }
+}
+
+function statusLabel(status: Task['status']) {
+  if (status === 'toDo') return 'To Do'
+  if (status === 'inProgress') return 'In Progress'
+  if (status === 'awaitingReply') return 'Awaiting Reply'
+  return 'Done'
+}
+
+const taskTypeLabels: Record<string, string> = {
+  admin: 'Admin',
+  outreach: 'Outreach',
+  client_work: 'Client Work',
+  business_development: 'Business Development',
+  schedule: 'Schedule',
+  other: 'Other',
+}
 
 export function SettingsPage() {
   const [activeSection, setActiveSection] = useState<SettingsSection>(() => getInitialSection())
@@ -84,7 +112,12 @@ export function SettingsPage() {
   const [fathomMeetings, setFathomMeetings] = useState<FathomMeeting[]>([])
   const [isSyncingFathom, setIsSyncingFathom] = useState(false)
   const [isLoadingMeetings, setIsLoadingMeetings] = useState(false)
-  const { loadArchivedTasks } = useTasks()
+  const {
+  archivedTasks,
+  loadArchivedTasks,
+  restoreTask,
+  deleteTask,
+} = useTasks()
 
   const webhookUrl = useMemo(() => getFathomWebhookUrl(), [])
 
@@ -219,7 +252,36 @@ export function SettingsPage() {
       setIsSyncingFathom(false)
     }
   }
+const handleRestoreTask = async (task: Task) => {
+  const { error } = await restoreTask(task.id)
 
+  if (error) {
+    setStatusMessage(`Task restore failed: ${error.message}`)
+    return
+  }
+
+  setStatusMessage('Task restored.')
+  await loadArchivedTasks()
+}
+
+const handleDeleteTask = async (task: Task) => {
+  const shouldDelete = window.confirm(
+    `Permanently delete "${task.title}"? This cannot be undone.`,
+  )
+
+  if (!shouldDelete) return
+
+  const { error } = await deleteTask(task.id)
+
+  if (error) {
+    setStatusMessage(`Task delete failed: ${error.message}`)
+    return
+  }
+
+  setStatusMessage('Task permanently deleted.')
+  await loadArchivedTasks()
+}
+  
     const sections: Array<{
     id: SettingsSection
     label: string
@@ -313,7 +375,113 @@ export function SettingsPage() {
             </div>
           )}
 
-          {activeSection === 'integrations' && (
+          {activeSection === 'archive' && (
+  <div>
+    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+      <div>
+        <h2 className="text-2xl">Archive</h2>
+        <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
+          Review archived items and restore anything you want back in your workspace.
+          For now, this section supports archived tasks.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => void loadArchivedTasks()}
+        className="w-fit rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--text)]"
+      >
+        Refresh
+      </button>
+    </div>
+
+    <div className="mt-6 rounded-xl border border-[var(--border)] bg-white">
+      <header className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
+        <div>
+          <h3 className="font-semibold">Archived Tasks</h3>
+          <p className="mt-1 text-xs text-[var(--muted)]">
+            {archivedTasks.length} archived task{archivedTasks.length === 1 ? '' : 's'}
+          </p>
+        </div>
+      </header>
+
+      {archivedTasks.length === 0 ? (
+        <div className="p-8 text-center">
+          <p className="font-serif text-xl text-[var(--text)]">No archived tasks</p>
+          <p className="mt-2 text-sm text-[var(--muted)]">
+            Tasks you archive will appear here so you can restore them later.
+          </p>
+        </div>
+      ) : (
+        <div className="divide-y divide-[var(--border)]">
+          {archivedTasks.map((task) => (
+            <article
+              key={task.id}
+              className="flex flex-col gap-3 px-5 py-4 md:flex-row md:items-center md:justify-between"
+            >
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h4 className="truncate font-semibold text-[var(--text)]">
+                    {task.title}
+                  </h4>
+
+                  {task.starred && (
+                    <span className="text-[#f0c040]">★</span>
+                  )}
+                </div>
+
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <span className="rounded-full bg-[rgba(193,152,173,0.16)] px-2.5 py-1 text-[10.5px] font-medium text-[#9f6e89]">
+                    {statusLabel(task.status)}
+                  </span>
+
+                  {task.task_type && (
+                    <span className="rounded-full bg-[#f3f2ef] px-2.5 py-1 text-[10.5px] font-medium text-[#8a867f]">
+                      {taskTypeLabels[task.task_type] ?? task.task_type}
+                    </span>
+                  )}
+
+                  <span className="rounded-full bg-[#f3f2ef] px-2.5 py-1 text-[10.5px] font-medium text-[var(--muted)]">
+                    Due {formatShortDate(task.due_date)}
+                  </span>
+
+                  <span className="rounded-full bg-[#f3f2ef] px-2.5 py-1 text-[10.5px] font-medium text-[var(--muted)]">
+                    {task.estimated_minutes}m
+                  </span>
+                </div>
+
+                {task.notes && (
+                  <p className="mt-2 line-clamp-2 text-sm text-[var(--muted)]">
+                    {task.notes}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void handleRestoreTask(task)}
+                  className="rounded-lg bg-[var(--tasks)] px-3 py-2 text-xs font-semibold text-white"
+                >
+                  Restore
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => void handleDeleteTask(task)}
+                  className="rounded-lg border border-[rgba(201,136,142,0.35)] bg-white px-3 py-2 text-xs font-semibold text-[#a85c64]"
+                >
+                  Delete permanently
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+)}
+          {activeSection !== 'integrations' && activeSection !== 'archive' && (
             <div>
               <h2 className="text-2xl">Integrations</h2>
               <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
