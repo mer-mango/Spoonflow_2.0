@@ -4,6 +4,8 @@ type TaskCardProps = {
   task: Task
   contactName?: string | null
   contactId?: string | null
+  selected?: boolean
+  onSelect?: (task: Task) => void
   onToggle: (task: Task) => void
   onEdit: (task: Task) => void
   onArchive?: (task: Task) => void
@@ -82,7 +84,7 @@ function ArchiveIcon() {
   return (
     <svg
       viewBox="0 0 16 16"
-      className="h-4.5 w-4.5"
+      className="h-[18px] w-[18px]"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.7"
@@ -114,7 +116,8 @@ export function TaskCard({
   task,
   contactName,
   contactId,
-  onToggle,
+  selected = false,
+  onSelect,
   onEdit,
   onArchive,
   onDelete,
@@ -191,17 +194,18 @@ export function TaskCard({
               <button
                 type="button"
                 className={`mt-[2px] flex h-6 w-6 shrink-0 items-center justify-center rounded border-[1.5px] transition ${
-                  done
-                    ? 'border-[var(--done)] bg-[var(--done)]'
+                  selected
+                    ? 'border-[var(--tasks)] bg-[var(--tasks)]'
                     : 'border-[#c8c5c0] bg-white hover:border-[var(--tasks)]'
                 }`}
                 onClick={(event) => {
                   event.stopPropagation()
-                  onToggle(task)
+                  onSelect?.(task)
                 }}
-                aria-label="Toggle task status"
+                aria-label={selected ? 'Deselect task' : 'Select task'}
+                title={selected ? 'Deselect task' : 'Select task'}
               >
-                {done ? <span className="text-[12px] leading-none text-white">✓</span> : null}
+                {selected ? <span className="text-[12px] leading-none text-white">✓</span> : null}
               </button>
             </div>
 
