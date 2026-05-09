@@ -380,7 +380,6 @@ function TodayTimeline({
 
           {sorted.map((activity, index) => {
             const color = activityColors[activity.type] ?? activityColors.custom
-            const start = minutesFromTimeLabel(activity.start)
             const end = minutesFromTimeLabel(activity.end)
             const next = sorted[index + 1]
             const nextStart = next ? minutesFromTimeLabel(next.start) : null
