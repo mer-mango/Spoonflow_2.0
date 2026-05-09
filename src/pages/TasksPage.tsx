@@ -212,6 +212,10 @@ export function TasksPage() {
       key={task.id}
       task={task}
       contactName={task.contact_id ? contactById.get(task.contact_id) ?? null : null}
+      contactId={task.contact_id}
+      onContactClick={(contactId) => {
+        navigate(`/contacts/${contactId}`)
+      }}
       onEdit={handleOpenTask}
       onArchive={async (item) => {
         const { error } = await archiveTask(item.id)
