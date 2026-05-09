@@ -12,6 +12,7 @@ type TaskCardProps = {
   onDelete?: (task: Task) => void
   onStar?: (task: Task) => void
   onContactClick?: (contactId: string) => void
+  onQuickUpdate?: (task: Task, patch: Partial<Task>) => Promise<void> | void
   showContact?: boolean
   showGoal?: boolean
 }
@@ -61,25 +62,6 @@ function dateBoxParts(date: string | null) {
   }
 }
 
-function dueDateLabel(date: string | null) {
-  if (!date) return 'No due date'
-
-  const parsed = new Date(`${date}T00:00:00`)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  const diff = Math.round((parsed.getTime() - today.getTime()) / 86400000)
-
-  if (diff === 0) return 'Today'
-  if (diff === 1) return 'Tomorrow'
-  if (diff === -1) return 'Yesterday'
-
-  return parsed.toLocaleDateString([], {
-    month: 'short',
-    day: 'numeric',
-  })
-}
-
 function ArchiveIcon() {
   return (
     <svg
@@ -123,6 +105,7 @@ export function TaskCard({
   onDelete,
   onStar,
   onContactClick,
+  onQuickUpdate,
 }: TaskCardProps) {
   const done = task.status === 'done'
   const dateParts = dateBoxParts(task.due_date)
@@ -248,20 +231,46 @@ export function TaskCard({
                 </span>
               )}
 
-              <span
-                className={`rounded-full px-2.5 py-1 text-[10.5px] font-medium ${
+              <input
+                type="date"
+                value={task.due_date ?? ''}
+                onClick={(event) => event.stopPropagation()}
+                onChange={(event) => {
+                  event.stopPropagation()
+                  void onQuickUpdate?.(task, {
+                    due_date: event.target.value || null,
+                  })
+                }}
+                className={`h-[24px] rounded-full border-0 px-2.5 py-1 text-[10.5px] font-medium outline-none transition ${
                   dateParts.overdue
                     ? 'bg-[rgba(201,136,142,0.13)] text-[#c9888e]'
                     : 'bg-[#f3f2ef] text-[var(--muted)]'
                 }`}
-              >
-                {dateParts.overdue ? '⚠ ' : ''}
-                {dueDateLabel(task.due_date)}
-              </span>
+                title="Edit due date"
+              />
 
-              <span className="rounded-full bg-[#f3f2ef] px-2.5 py-1 text-[10.5px] font-medium text-[var(--muted)]">
-                {task.estimated_minutes}m
-              </span>
+              <select
+                value={String(task.estimated_minutes ?? 30)}
+                onClick={(event) => event.stopPropagation()}
+                onChange={(event) => {
+                  event.stopPropagation()
+                  void onQuickUpdate?.(task, {
+                    estimated_minutes: Number(event.target.value),
+                  })
+                }}
+                className="h-[24px] rounded-full border-0 bg-[#f3f2ef] px-2.5 py-1 text-[10.5px] font-medium text-[var(--muted)] outline-none"
+                title="Edit estimated time"
+              >
+                <option value="5">5m</option>
+                <option value="10">10m</option>
+                <option value="15">15m</option>
+                <option value="20">20m</option>
+                <option value="30">30m</option>
+                <option value="45">45m</option>
+                <option value="60">1h</option>
+                <option value="90">1.5h</option>
+                <option value="120">2h</option>
+              </select>
             </div>
           </div>
         </div>
