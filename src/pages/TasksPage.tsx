@@ -284,31 +284,43 @@ export function TasksPage() {
   }
 
   const renderTaskCard = (task: Task) => (
-    <TaskCard
-      key={task.id}
-      task={task}
-      selected={selectedTaskIds.includes(task.id)}
-      onSelect={toggleTaskSelection}
-      contactName={task.contact_id ? contactById.get(task.contact_id) ?? null : null}
-      contactId={task.contact_id}
-      onContactClick={(contactId) => {
-        navigate(`/contacts/${contactId}`)
-      }}
-      onEdit={handleOpenTask}
-      onArchive={async (item) => {
-        const { error } = await archiveTask(item.id)
+   <TaskCard
+  key={task.id}
+  task={task}
+  selected={selectedTaskIds.includes(task.id)}
+  onSelect={toggleTaskSelection}
+  contactName={task.contact_id ? contactById.get(task.contact_id) ?? null : null}
+  contactId={task.contact_id}
+  onContactClick={(contactId) => {
+    navigate(`/contacts/${contactId}`)
+  }}
+  onEdit={handleOpenTask}
+  onArchive={async (item) => {
+    const { error } = await archiveTask(item.id)
 
-        if (error) {
-          notify(`Task archive failed: ${error.message}`)
-          return
-        }
+    if (error) {
+      notify(`Task archive failed: ${error.message}`)
+      return
+    }
 
-        notify('Task archived')
-      }}
-      onStar={async (item) => {
-        const { error } = await updateTask(item.id, {
-          starred: !item.starred,
-        })
+    notify('Task archived')
+  }}
+  onQuickUpdate={async (item, patch) => {
+    const { error } = await updateTask(item.id, patch)
+
+    if (error) {
+      notify(`Task update failed: ${error.message}`)
+    }
+  }}
+  onStar={async (item) => {
+    const { error } = await updateTask(item.id, {
+      starred: !item.starred,
+    })
+
+    if (error) {
+      notify(`Task update failed: ${error.message}`)
+    }
+  }}
 
         if (error) {
           notify(`Task update failed: ${error.message}`)
