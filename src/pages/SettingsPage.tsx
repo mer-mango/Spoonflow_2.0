@@ -3,7 +3,6 @@ import { supabase } from '../lib/supabase'
 import { useTasks, type Task } from '../hooks/useTasks'
 
 type SettingsSection =
-  | 'profile'
   | 'integrations'
   | 'notifications'
   | 'jamie'
