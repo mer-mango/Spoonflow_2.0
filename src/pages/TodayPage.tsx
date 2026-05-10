@@ -662,88 +662,6 @@ function TodayTimeline({
   )
 }
 
-          {sorted.map((activity, index) => {
-            const color = activityColors[activity.type] ?? activityColors.custom
-            const end = minutesFromTimeLabel(activity.end)
-            const next = sorted[index + 1]
-            const nextStart = next ? minutesFromTimeLabel(next.start) : null
-            const gap = nextStart ? nextStart - end : 0
-            const isLast = index === sorted.length - 1
-
-            return (
-              <div key={activity.id}>
-                <div className="flex items-start">
-                  <div className="w-[86px] shrink-0 pr-5 pt-2 text-right text-[11.5px] font-medium text-[var(--muted)]">
-                    {activity.start}
-                  </div>
-
-                  <div className="flex w-9 shrink-0 flex-col items-center">
-                    <div
-                      className="flex h-[34px] w-[34px] items-center justify-center rounded-full"
-                      style={{
-                        backgroundColor: color,
-                        outline: activity.isJamieAdded ? `3px solid ${color}22` : undefined,
-                        outlineOffset: activity.isJamieAdded ? 1 : undefined,
-                      }}
-                    >
-                      <ActivityIcon type={activity.type} />
-                    </div>
-
-                    {!isLast && (
-                      <div
-                        className="min-h-5 w-[2px] flex-1"
-                        style={{ backgroundColor: `${color}28` }}
-                      />
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1 px-4 pb-5 pt-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-[13px] font-medium leading-snug text-[var(--text)]">
-                          {activity.title}
-                        </p>
-
-                        <p className="mt-1 text-[11px] text-[var(--muted)]">
-                          {durationLabel(activity.durationMinutes)}
-                          {activity.isJamieAdded ? ' · from calendar' : ''}
-                        </p>
-                      </div>
-
-                      {activity.isManual && (
-                        <button
-                          type="button"
-                          onClick={() => onDeleteManualActivity(activity.id)}
-                          className="text-[15px] leading-none text-[#ccc] transition hover:text-[#c9888e]"
-                          aria-label="Delete activity"
-                        >
-                          ×
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {gap >= 15 && (
-                  <TimelineGap minutes={gap} afterMinutes={end} onAdd={onAddActivity} />
-                )}
-              </div>
-            )
-          })}
-
-          {dayEnd - minutesFromTimeLabel(sorted[sorted.length - 1].end) >= 15 && (
-            <TimelineGap
-              minutes={dayEnd - minutesFromTimeLabel(sorted[sorted.length - 1].end)}
-              afterMinutes={minutesFromTimeLabel(sorted[sorted.length - 1].end)}
-              onAdd={onAddActivity}
-            />
-          )}
-        </>
-      )}
-    </div>
-  )
-}
-
 export function TodayPage() {
   const navigate = useNavigate()
   const { enrichedCalendarEvents } = useGoogleCalendar()
@@ -776,7 +694,7 @@ export function TodayPage() {
     setOpenAdd(true)
   }
 
-    const updateManualActivity = (id: string, patch: Partial<TimelineActivity>) => {
+  const updateManualActivity = (id: string, patch: Partial<TimelineActivity>) => {
     setManualActivities((prev) =>
       prev.map((activity) =>
         activity.id === id
@@ -949,15 +867,15 @@ export function TodayPage() {
             ) : (
               orderedTaskWidgetItems.slice(0, 8).map((task) => (
                 <TaskWidgetRow
-              key={task.id}
-              task={task}
-              todayKey={todayKey}
-              contactName={task.contact_id ? contactById.get(task.contact_id) ?? null : null}
-              onClick={() => setSelectedTask(task)}
-              onQuickUpdate={async (item, patch) => {
-                await updateTask(item.id, patch)
-              }}
-            />
+                  key={task.id}
+                  task={task}
+                  todayKey={todayKey}
+                  contactName={task.contact_id ? contactById.get(task.contact_id) ?? null : null}
+                  onClick={() => setSelectedTask(task)}
+                  onQuickUpdate={async (item, patch) => {
+                    await updateTask(item.id, patch)
+                  }}
+                />
               ))
             )}
           </WidgetCard>
@@ -1022,14 +940,14 @@ export function TodayPage() {
           </WidgetCard>
         </div>
 
-           <TodayTimeline
-              activities={timelineActivities}
-              onDeleteManualActivity={(id) =>
-                setManualActivities((prev) => prev.filter((item) => item.id !== id))
-              }
-              onUpdateManualActivity={updateManualActivity}
-              onAddActivity={openAddActivity}
-            />
+        <TodayTimeline
+          activities={timelineActivities}
+          onDeleteManualActivity={(id) =>
+            setManualActivities((prev) => prev.filter((item) => item.id !== id))
+          }
+          onUpdateManualActivity={updateManualActivity}
+          onAddActivity={openAddActivity}
+        />
       </div>
 
       <AddActivityModal
