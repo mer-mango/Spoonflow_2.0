@@ -44,6 +44,25 @@ const activityColors: Record<string, string> = {
   custom: '#b0b5ba',
 }
 
+const timelineActivityOptions: Array<{
+  type: TimelineActivity['type']
+  title: string
+}> = [
+  { type: 'task', title: 'Task Block' },
+  { type: 'content', title: 'Content Block' },
+  { type: 'nurture', title: 'Nurture Block' },
+  { type: 'email', title: 'Email' },
+  { type: 'break', title: 'Break' },
+  { type: 'pt', title: 'PT / Movement' },
+  { type: 'professional-dev', title: 'Professional Development' },
+  { type: 'lunch', title: 'Lunch' },
+  { type: 'wind-down', title: 'Wind Down' },
+  { type: 'custom', title: 'Custom Block' },
+]
+
+function timelineActivityOptionForType(type: TimelineActivity['type']) {
+  return timelineActivityOptions.find((option) => option.type === type)
+}
 const timelineTimeTextClass =
   'w-[68px] border-0 bg-transparent p-0 text-right text-[11.5px] font-medium text-[var(--muted)] outline-none transition hover:text-[var(--text)] focus:text-[var(--text)]'
 
@@ -647,24 +666,33 @@ function TodayTimeline({
                   <div className="min-w-0 flex-1 px-4 pb-5 pt-1">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        {activity.isManual ? (
-                          <input
-                            value={activity.title}
-                            onChange={(event) =>
-                              onUpdateManualActivity(activity.id, {
-                                title: event.target.value,
-                              })
-                            }
-                            className="w-full rounded-md border-0 bg-transparent px-0 py-0 text-[13px] font-medium leading-snug text-[var(--text)] outline-none transition focus:border-b focus:border-[var(--tasks)]"
-                            aria-label="Edit activity title"
-                          />
-                        ) : (
-                          <p className="truncate text-[13px] font-medium leading-snug text-[var(--text)]">
-                            {activity.title}
-                          </p>
-                        )}
-
-                        {activity.isManual ? (
+                    {activity.isManual ? (
+                      <select
+                        value={activity.type}
+                        onChange={(event) => {
+              const nextType = event.target.value as TimelineActivity['type']
+              const nextOption = timelineActivityOptionForType(nextType)
+                      onUpdateManualActivity(activity.id, {
+                        type: nextType,
+                        title: nextOption?.title ?? activity.title,
+                      })
+                    }}
+                    className="w-full appearance-none truncate border-0 bg-transparent px-0 py-0 text-[13px] font-medium leading-snug text-[var(--text)] outline-none transition hover:text-[var(--tasks)] focus:text-[var(--tasks)]"
+                    aria-label="Edit activity type"
+                    title="Edit activity type"
+                  >
+                    {timelineActivityOptions.map((option) => (
+                      <option key={option.type} value={option.type}>
+                        {option.title}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="truncate text-[13px] font-medium leading-snug text-[var(--text)]">
+                    {activity.title}
+                  </p>
+                )}
+                                        {activity.isManual ? (
                           <div className="mt-1 flex flex-wrap items-center gap-2">
                             <select
                               value={String(activity.durationMinutes)}
