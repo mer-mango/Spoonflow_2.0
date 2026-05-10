@@ -41,6 +41,7 @@ const activityColors: Record<string, string> = {
   lunch: '#d4b5a0',
   winddown: '#93738e',
   'wind-down': '#93738e',
+  goals: '#a389aa',
   custom: '#b0b5ba',
 }
 
@@ -57,6 +58,7 @@ const timelineActivityOptions: Array<{
   { type: 'professional-dev', title: 'Professional Development' },
   { type: 'lunch', title: 'Lunch' },
   { type: 'wind-down', title: 'Wind Down' },
+  { type: 'goals', title: 'Goals' },
   { type: 'custom', title: 'Custom' },
 ]
 
@@ -303,9 +305,29 @@ function ActivityIcon({ type }: { type: string }) {
   if (type === 'content') {
     return (
       <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none">
-        <path d="M7.2 1.8L12 6.6" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
-        <path d="M8.1 2.7L4.5 6.3C4 6.8 4 7.6 4.5 8.1L5.9 9.5C6.4 10 7.2 10 7.7 9.5L11.3 5.9" stroke="white" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M4.8 9.2L2.2 11.8" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
+        <path
+          d="M8.8 2.3L11.7 5.2L5.3 11.6L2.4 12.2L3 9.3L8.8 2.3Z"
+          stroke="white"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M7.9 3.4L10.6 6.1"
+          stroke="white"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+        />
+      </svg>
+    )
+  }
+
+  if (type === 'goals') {
+    return (
+      <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none">
+        <circle cx="7" cy="7" r="4.8" stroke="white" strokeWidth="1.3" />
+        <circle cx="7" cy="7" r="2.5" stroke="white" strokeWidth="1.3" />
+        <circle cx="7" cy="7" r="0.7" fill="white" />
       </svg>
     )
   }
