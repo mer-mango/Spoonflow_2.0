@@ -35,159 +35,52 @@ function Icon({ name }: { name: IconName }) {
     case 'today':
       return (
         <svg {...common}>
-          <path
-            d="M4 10.5 12 4l8 6.5"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M6.5 10v9h11v-9"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M10 19v-5h4v5"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          <path d="M4 10.5 12 4l8 6.5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M6.5 10v9h11v-9" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M10 19v-5h4v5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )
 
     case 'contacts':
       return (
         <svg {...common}>
-          <path
-            d="M9.5 11.5a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z"
-            stroke="currentColor"
-            strokeWidth="2.3"
-          />
-          <path
-            d="M3.8 19.5a5.7 5.7 0 0 1 11.4 0"
-            stroke="currentColor"
-            strokeWidth="2.3"
-            strokeLinecap="round"
-          />
-          <path
-            d="M16 11.2a2.8 2.8 0 1 0 0-5.6"
-            stroke="currentColor"
-            strokeWidth="2.3"
-            strokeLinecap="round"
-          />
-          <path
-            d="M17.2 14.2a5 5 0 0 1 3 5.3"
-            stroke="currentColor"
-            strokeWidth="2.3"
-            strokeLinecap="round"
-          />
+          <path d="M9.5 11.5a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" strokeWidth="2.3" />
+          <path d="M3.8 19.5a5.7 5.7 0 0 1 11.4 0" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+          <path d="M16 11.2a2.8 2.8 0 1 0 0-5.6" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+          <path d="M17.2 14.2a5 5 0 0 1 3 5.3" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
         </svg>
       )
 
     case 'calendar':
       return (
         <svg {...common}>
-          <rect
-            x="4"
-            y="5.5"
-            width="16"
-            height="15"
-            rx="2.8"
-            stroke="currentColor"
-            strokeWidth="2.3"
-          />
-          <path
-            d="M8 3.5v4M16 3.5v4M4 10h16"
-            stroke="currentColor"
-            strokeWidth="2.3"
-            strokeLinecap="round"
-          />
+          <rect x="4" y="5.5" width="16" height="15" rx="2.8" stroke="currentColor" strokeWidth="2.3" />
+          <path d="M8 3.5v4M16 3.5v4M4 10h16" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
         </svg>
       )
 
     case 'tasks':
       return (
         <svg {...common}>
-          <rect
-            x="4"
-            y="4"
-            width="16"
-            height="16"
-            rx="3"
-            stroke="currentColor"
-            strokeWidth="2.3"
-          />
-          <path
-            d="m8 12.2 2.5 2.5L16.5 8.8"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          <rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" strokeWidth="2.3" />
+          <path d="m8 12.2 2.5 2.5L16.5 8.8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )
 
     case 'content':
       return (
         <svg {...common}>
-          <path
-            d="M12 4v7.5"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          />
-          <path
-            d="M8 4h8"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          />
-          <path
-            d="M7.2 11.5h9.6"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          />
-          <path
-            d="M12 11.5v8"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          />
-          <path
-            d="M9 19.5h6"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          />
+          <path d="M14.7 4.8 19.2 9.3 9.1 19.4 4.6 20.2 5.4 15.7 14.7 4.8Z" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M13.2 6.5 17.5 10.8" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
         </svg>
       )
 
     case 'nurture':
       return (
         <svg {...common}>
-          <path
-            d="M12 20v-8"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-          />
-          <path
-            d="M12 12c-4.2-.2-6.8-2.5-7-6.7 4.2.2 6.8 2.5 7 6.7Z"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M12 13c4.2-.2 6.8-2.5 7-6.7-4.2.2-6.8 2.5-7 6.7Z"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinejoin="round"
-          />
+          <path d="M12 20v-8" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+          <path d="M12 12c-4.2-.2-6.8-2.5-7-6.7 4.2.2 6.8 2.5 7 6.7Z" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" />
+          <path d="M12 13c4.2-.2 6.8-2.5 7-6.7-4.2.2-6.8 2.5-7 6.7Z" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" />
         </svg>
       )
 
@@ -203,61 +96,25 @@ function Icon({ name }: { name: IconName }) {
     case 'bell':
       return (
         <svg {...common}>
-          <path
-            d="M6 18h12l-1.5-2v-4.5a4.5 4.5 0 0 0-9 0V16L6 18Z"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M10 20a2 2 0 0 0 4 0"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-          />
+          <path d="M6 18h12l-1.5-2v-4.5a4.5 4.5 0 0 0-9 0V16L6 18Z" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" />
+          <path d="M10 20a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
         </svg>
       )
 
     case 'sync':
       return (
         <svg {...common}>
-          <path
-            d="M20 7v5h-5"
-            stroke="currentColor"
-            strokeWidth="2.3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M4 17v-5h5"
-            stroke="currentColor"
-            strokeWidth="2.3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M18 10a6.5 6.5 0 0 0-11-3M6 14a6.5 6.5 0 0 0 11 3"
-            stroke="currentColor"
-            strokeWidth="2.3"
-            strokeLinecap="round"
-          />
+          <path d="M20 7v5h-5" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M4 17v-5h5" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M18 10a6.5 6.5 0 0 0-11-3M6 14a6.5 6.5 0 0 0 11 3" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
         </svg>
       )
 
     case 'settings':
       return (
         <svg {...common}>
-          <path
-            d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"
-            stroke="currentColor"
-            strokeWidth="2.2"
-          />
-          <path
-            d="M19 12a7 7 0 0 0-.1-1.1l2-1.5-2-3.4-2.4 1a7 7 0 0 0-1.9-1.1L14.3 3h-4l-.4 2.9A7 7 0 0 0 8 7L5.6 6 3.6 9.4l2 1.5A7 7 0 0 0 5.5 12c0 .4 0 .8.1 1.1l-2 1.5 2 3.4 2.4-1c.6.5 1.2.8 1.9 1.1l.4 2.9h4l.4-2.9c.7-.3 1.3-.6 1.9-1.1l2.4 1 2-3.4-2-1.5c.1-.3.1-.7.1-1.1Z"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            strokeLinejoin="round"
-          />
+          <path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z" stroke="currentColor" strokeWidth="2.2" />
+          <path d="M19 12a7 7 0 0 0-.1-1.1l2-1.5-2-3.4-2.4 1a7 7 0 0 0-1.9-1.1L14.3 3h-4l-.4 2.9A7 7 0 0 0 8 7L5.6 6 3.6 9.4l2 1.5A7 7 0 0 0 5.5 12c0 .4 0 .8.1 1.1l-2 1.5 2 3.4 2.4-1c.6.5 1.2.8 1.9 1.1l.4 2.9h4l.4-2.9c.7-.3 1.3-.6 1.9-1.1l2.4 1 2-3.4-2-1.5c.1-.3.1-.7.1-1.1Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
         </svg>
       )
   }
@@ -271,15 +128,7 @@ function LogoMark() {
   )
 }
 
-function IconBubble({
-  color,
-  icon,
-  active,
-}: {
-  color: string
-  icon: IconName
-  active?: boolean
-}) {
+function IconBubble({ color, icon, active }: { color: string; icon: IconName; active?: boolean }) {
   return (
     <span
       className="flex h-7 w-7 min-w-7 items-center justify-center rounded-full text-white transition"
@@ -348,11 +197,7 @@ export function Sidebar() {
                 <span className="min-w-0 flex-1 truncate">{item.label}</span>
 
                 {typeof item.count === 'number' && item.count > 0 && (
-                  <span
-                    className={`text-[11px] leading-none ${
-                      isActive ? 'text-white/80' : 'text-[var(--muted)]'
-                    }`}
-                  >
+                  <span className={`text-[11px] leading-none ${isActive ? 'text-white/80' : 'text-[var(--muted)]'}`}>
                     {item.count}
                   </span>
                 )}
@@ -386,9 +231,7 @@ export function Sidebar() {
           to="/settings/integrations"
           className={({ isActive }) =>
             `mb-1 flex cursor-pointer items-center gap-2 rounded-full px-2.5 py-2 text-left text-[12px] leading-none transition-colors ${
-              isActive
-                ? 'bg-[#2c2c2a] text-white'
-                : 'text-[var(--muted)] hover:bg-black/[0.04]'
+              isActive ? 'bg-[#2c2c2a] text-white' : 'text-[var(--muted)] hover:bg-black/[0.04]'
             }`
           }
         >
