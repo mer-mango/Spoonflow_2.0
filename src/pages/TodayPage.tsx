@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { TaskModal } from '../components/shared/TaskModal'
 import { AddActivityModal } from '../components/today/AddActivityModal'
@@ -44,11 +44,11 @@ const activityColors: Record<string, string> = {
   custom: '#b0b5ba',
 }
 
-const timelineTextControlClass =
-  'h-auto border-0 bg-transparent p-0 text-[11px] font-normal text-[var(--muted)] outline-none transition hover:text-[var(--text)] focus:text-[var(--text)]'
+const timelineTimeTextClass =
+  'w-[68px] border-0 bg-transparent p-0 text-right text-[11.5px] font-medium text-[var(--muted)] outline-none transition hover:text-[var(--text)] focus:text-[var(--text)]'
 
 const timelineDurationSelectClass =
-  'h-auto appearance-none border-0 bg-transparent p-0 pr-0 text-[11px] font-normal text-[var(--muted)] outline-none transition hover:text-[var(--text)] focus:text-[var(--text)]'
+  'appearance-none border-0 bg-transparent p-0 pr-0 text-[11px] font-normal text-[var(--muted)] outline-none transition hover:text-[var(--text)] focus:text-[var(--text)]'
 
 function todayDateKey() {
   const now = new Date()
@@ -157,23 +157,31 @@ function taskTypeLabel(value?: string | null) {
 
 function minutesFromTimeLabel(label: string) {
   const trimmed = label.trim()
+  if (!trimmed) return Number.NaN
 
-  if (/^\d{2}:\d{2}$/.test(trimmed)) {
-    const [hour, minute] = trimmed.split(':').map(Number)
+  const twentyFourHourMatch = trimmed.match(/^(\d{1,2}):(\d{2})$/)
+  if (twentyFourHourMatch) {
+    const hour = Number(twentyFourHourMatch[1])
+    const minute = Number(twentyFourHourMatch[2])
+
+    if (hour > 23 || minute > 59) return Number.NaN
     return hour * 60 + minute
   }
 
-  const [timePart, meridiemRaw] = trimmed.split(' ')
-  const [hourRaw, minuteRaw] = timePart.split(':')
-  const meridiem = meridiemRaw?.toLowerCase()
+  const twelveHourMatch = trimmed.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i)
+  if (twelveHourMatch) {
+    let hour = Number(twelveHourMatch[1])
+    const minute = Number(twelveHourMatch[2] ?? 0)
+    const meridiem = twelveHourMatch[3].toLowerCase()
 
-  let hour = Number(hourRaw)
-  const minute = Number(minuteRaw ?? 0)
+    if (hour < 1 || hour > 12 || minute > 59) return Number.NaN
+    if (meridiem === 'pm' && hour !== 12) hour += 12
+    if (meridiem === 'am' && hour === 12) hour = 0
 
-  if (meridiem === 'pm' && hour !== 12) hour += 12
-  if (meridiem === 'am' && hour === 12) hour = 0
+    return hour * 60 + minute
+  }
 
-  return hour * 60 + minute
+  return Number.NaN
 }
 
 function timeValueFromMinutes(totalMinutes: number) {
@@ -185,12 +193,21 @@ function timeValueFromMinutes(totalMinutes: number) {
 }
 
 function timeLabelFromMinutes(totalMinutes: number) {
-  const hour24 = Math.floor(totalMinutes / 60)
-  const minute = totalMinutes % 60
+  const safeMinutes = Math.max(0, Math.min(totalMinutes, 23 * 60 + 59))
+  const hour24 = Math.floor(safeMinutes / 60)
+  const minute = safeMinutes % 60
   const meridiem = hour24 >= 12 ? 'PM' : 'AM'
   const hour12 = hour24 % 12 || 12
 
   return `${hour12}:${String(minute).padStart(2, '0')} ${meridiem}`
+}
+
+function displayTimeLabel(label: string) {
+  const minutes = minutesFromTimeLabel(label)
+
+  if (!Number.isFinite(minutes)) return label
+
+  return timeLabelFromMinutes(minutes)
 }
 
 function durationLabel(minutes: number) {
@@ -206,7 +223,7 @@ function durationFromActivity(activity: TimelineActivity) {
   const start = minutesFromTimeLabel(activity.start)
   const end = minutesFromTimeLabel(activity.end)
 
-  if (end > start) return end - start
+  if (Number.isFinite(start) && Number.isFinite(end) && end > start) return end - start
 
   return 30
 }
@@ -477,6 +494,62 @@ function TimelineGap({
   )
 }
 
+function TimelineStartTimeInput({
+  activity,
+  onUpdateStart,
+}: {
+  activity: TimelineDisplayItem
+  onUpdateStart: (activity: TimelineDisplayItem, nextStart: string) => void
+}) {
+  const [value, setValue] = useState(displayTimeLabel(activity.start))
+
+  useEffect(() => {
+    setValue(displayTimeLabel(activity.start))
+  }, [activity.start])
+
+  const commit = () => {
+    const minutes = minutesFromTimeLabel(value)
+
+    if (!Number.isFinite(minutes)) {
+      setValue(displayTimeLabel(activity.start))
+      return
+    }
+
+    onUpdateStart(activity, timeLabelFromMinutes(minutes))
+  }
+
+  if (!activity.isManual) {
+    return (
+      <div className="w-[86px] shrink-0 pr-5 pt-2 text-right text-[11.5px] font-medium text-[var(--muted)]">
+        {displayTimeLabel(activity.start)}
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-[86px] shrink-0 pr-5 pt-2 text-right">
+      <input
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.currentTarget.blur()
+          }
+
+          if (event.key === 'Escape') {
+            setValue(displayTimeLabel(activity.start))
+            event.currentTarget.blur()
+          }
+        }}
+        className={timelineTimeTextClass}
+        title="Edit start time"
+        aria-label="Edit start time"
+      />
+    </div>
+  )
+}
+
 function TodayTimeline({
   activities,
   onDeleteManualActivity,
@@ -497,17 +570,21 @@ function TodayTimeline({
 
   const updateManualStart = (activity: TimelineDisplayItem, nextStart: string) => {
     const nextStartMinutes = minutesFromTimeLabel(nextStart)
-    const nextEnd = timeValueFromMinutes(nextStartMinutes + activity.durationMinutes)
+    if (!Number.isFinite(nextStartMinutes)) return
+
+    const nextEnd = timeLabelFromMinutes(nextStartMinutes + activity.durationMinutes)
 
     onUpdateManualActivity(activity.id, {
-      start: nextStart,
+      start: timeLabelFromMinutes(nextStartMinutes),
       end: nextEnd,
     })
   }
 
   const updateManualDuration = (activity: TimelineDisplayItem, nextDuration: number) => {
     const startMinutes = minutesFromTimeLabel(activity.start)
-    const nextEnd = timeValueFromMinutes(startMinutes + nextDuration)
+    if (!Number.isFinite(startMinutes)) return
+
+    const nextEnd = timeLabelFromMinutes(startMinutes + nextDuration)
 
     onUpdateManualActivity(activity.id, {
       end: nextEnd,
@@ -541,14 +618,11 @@ function TodayTimeline({
             const nextStart = next ? minutesFromTimeLabel(next.start) : null
             const gap = nextStart ? nextStart - end : 0
             const isLast = index === sorted.length - 1
-            const startInputValue = timeValueFromMinutes(minutesFromTimeLabel(activity.start))
 
             return (
               <div key={activity.id}>
                 <div className="flex items-start">
-                  <div className="w-[86px] shrink-0 pr-5 pt-2 text-right text-[11.5px] font-medium text-[var(--muted)]">
-                    {activity.start}
-                  </div>
+                  <TimelineStartTimeInput activity={activity} onUpdateStart={updateManualStart} />
 
                   <div className="flex w-9 shrink-0 flex-col items-center">
                     <div
@@ -592,15 +666,6 @@ function TodayTimeline({
 
                         {activity.isManual ? (
                           <div className="mt-1 flex flex-wrap items-center gap-2">
-                            <input
-                              type="text"
-                              value={startInputValue}
-                              onChange={(event) => updateManualStart(activity, event.target.value)}
-                              className={`${timelineTextControlClass} w-[48px]`}
-                              title="Edit start time"
-                              aria-label="Edit start time"
-                            />
-
                             <select
                               value={String(activity.durationMinutes)}
                               onChange={(event) =>
@@ -620,10 +685,14 @@ function TodayTimeline({
                               <option value="90">1.5h</option>
                               <option value="120">2h</option>
                             </select>
+
+                            <span className="text-[11px] text-[var(--muted)]">
+                              ends {displayTimeLabel(activity.end)}
+                            </span>
                           </div>
                         ) : (
                           <p className="mt-1 text-[11px] text-[var(--muted)]">
-                            {durationLabel(activity.durationMinutes)}
+                            {durationLabel(activity.durationMinutes)} · ends {displayTimeLabel(activity.end)}
                             {activity.isJamieAdded ? ' · from calendar' : ''}
                           </p>
                         )}
@@ -787,8 +856,8 @@ export function TodayPage() {
       id: activity.id,
       type: activity.type,
       title: activity.title,
-      start: activity.start,
-      end: activity.end,
+      start: displayTimeLabel(activity.start),
+      end: displayTimeLabel(activity.end),
       durationMinutes: durationFromActivity(activity),
       isManual: false,
       isJamieAdded: activity.isJamieAdded,
@@ -798,8 +867,8 @@ export function TodayPage() {
       id: activity.id,
       type: activity.type,
       title: activity.title,
-      start: activity.start,
-      end: activity.end,
+      start: displayTimeLabel(activity.start),
+      end: displayTimeLabel(activity.end),
       durationMinutes: durationFromActivity(activity),
       isManual: true,
       isJamieAdded: activity.isJamieAdded,
