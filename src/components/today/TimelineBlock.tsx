@@ -8,6 +8,7 @@ export type ActivityType =
   | 'professional-dev'
   | 'lunch'
   | 'wind-down'
+  | 'goals'
   | 'custom'
   | 'meeting'
   | 'medical'
@@ -33,6 +34,7 @@ const typeColor: Record<ActivityType, string> = {
   'professional-dev': 'var(--goals)',
   lunch: 'var(--contacts-3)',
   'wind-down': 'var(--goals)',
+  goals: 'var(--goals)',
   custom: 'var(--muted)',
   meeting: 'var(--meeting)',
   medical: 'var(--medical)',
