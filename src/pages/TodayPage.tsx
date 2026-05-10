@@ -129,7 +129,7 @@ function formatDueLabel(value?: string | null) {
 
 function statusPillClass(status: Task['status']) {
   if (status === 'toDo') return 'bg-[rgba(193,152,173,0.16)] text-[#9f6e89]'
-  if (status === 'inProgress') return 'bg-[rgba(100,132,161,0.16)] text-[#6484a1]'
+  if (status === 'inProgress') return 'bg-[rgba(212,167,122,0.18)] text-[#b57943]'
   if (status === 'awaitingReply') return 'bg-[#eee9e1] text-[#7f786f]'
   return 'bg-[rgba(143,167,144,0.18)] text-[#6f8d70]'
 }
