@@ -1,6 +1,3 @@
-Yes — here’s the full **MobileNav.tsx** again, with the **Content icon changed to a pencil**.
-
-```tsx
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 
@@ -157,9 +154,10 @@ export function MobileNav() {
                 <button
                   key={tab.path}
                   type="button"
-                  className={`flex flex-col items-center justify-center gap-1 text-[11px] font-medium ${
-                    moreOpen ? 'text-[var(--jamie)]' : 'text-[var(--muted)]'
-                  }`}
+                  className={
+                    'flex flex-col items-center justify-center gap-1 text-[11px] font-medium ' +
+                    (moreOpen ? 'text-[var(--jamie)]' : 'text-[var(--muted)]')
+                  }
                   onClick={() => setMoreOpen((value) => !value)}
                 >
                   <span className="h-[20px] w-[20px]">
@@ -175,9 +173,8 @@ export function MobileNav() {
                 key={tab.path}
                 to={tab.path}
                 className={({ isActive }) =>
-                  `flex flex-col items-center justify-center gap-1 text-[11px] font-medium ${
-                    isActive ? 'text-[var(--jamie)]' : 'text-[var(--muted)]'
-                  }`
+                  'flex flex-col items-center justify-center gap-1 text-[11px] font-medium ' +
+                  (isActive ? 'text-[var(--jamie)]' : 'text-[var(--muted)]')
                 }
               >
                 <span className="h-[20px] w-[20px]">
@@ -192,4 +189,3 @@ export function MobileNav() {
     </>
   )
 }
-```
