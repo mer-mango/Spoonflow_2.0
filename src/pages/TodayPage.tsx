@@ -611,10 +611,12 @@ function TimelineGap({
 function TimelineStartTimeInput({
   activity,
   hasOverlap,
+  isCurrent,
   onUpdateStart,
 }: {
   activity: TimelineDisplayItem
   hasOverlap: boolean
+  isCurrent: boolean
   onUpdateStart: (activity: TimelineDisplayItem, nextStart: string) => void
 }) {
   const [value, setValue] = useState(displayTimeLabel(activity.start))
@@ -637,8 +639,12 @@ function TimelineStartTimeInput({
   if (!activity.isManual) {
     return (
       <div
-        className={`w-[86px] shrink-0 pr-5 pt-2 text-right text-[11.5px] font-medium ${
-          hasOverlap ? 'text-[#c9888e]' : 'text-[var(--muted)]'
+        className={`w-[86px] shrink-0 pr-5 pt-2 text-right text-[11.5px] ${
+          hasOverlap
+            ? 'font-semibold text-[#c9888e]'
+            : isCurrent
+              ? 'font-semibold text-[var(--text)]'
+              : 'font-medium text-[var(--muted)]'
         }`}
         title={hasOverlap ? 'This activity overlaps with the previous activity.' : undefined}
       >
@@ -664,7 +670,11 @@ function TimelineStartTimeInput({
           }
         }}
         className={`${timelineTimeTextClass} ${
-          hasOverlap ? 'text-[#c9888e] focus:text-[#c9888e]' : ''
+          hasOverlap
+            ? 'font-semibold text-[#c9888e] focus:text-[#c9888e]'
+            : isCurrent
+              ? 'font-semibold text-[var(--text)] focus:text-[var(--text)]'
+              : ''
         }`}
         title={hasOverlap ? 'This activity overlaps with the previous activity.' : 'Edit start time'}
         aria-label="Edit start time"
@@ -675,11 +685,13 @@ function TimelineStartTimeInput({
 
 function TodayTimeline({
   activities,
+  nowMinutes,
   onDeleteManualActivity,
   onUpdateManualActivity,
   onAddActivity,
 }: {
   activities: TimelineDisplayItem[]
+  nowMinutes: number
   onDeleteManualActivity: (id: string) => void
   onUpdateManualActivity: (id: string, patch: Partial<TimelineActivity>) => void
   onAddActivity: (startTime?: string) => void
@@ -752,24 +764,34 @@ function TodayTimeline({
               Number.isFinite(previousEnd) &&
               Number.isFinite(start) &&
               start < previousEnd
+            const isCurrent =
+              Number.isFinite(start) &&
+              Number.isFinite(end) &&
+              nowMinutes >= start &&
+              nowMinutes < end
 
             return (
               <div key={activity.id}>
                 <div className="flex items-start">
-                  <TimelineStartTimeInput
-                    activity={activity}
-                    hasOverlap={hasOverlap}
-                    onUpdateStart={updateManualStart}
-                  />
+            <TimelineStartTimeInput
+                activity={activity}
+                hasOverlap={hasOverlap}
+                isCurrent={isCurrent}
+                onUpdateStart={updateManualStart}
+            />
 
                   <div className="flex w-9 shrink-0 flex-col items-center">
                     <div
                       className="flex h-[34px] w-[34px] items-center justify-center rounded-full"
-                      style={{
-                        backgroundColor: color,
-                        outline: activity.isJamieAdded ? `3px solid ${color}22` : undefined,
-                        outlineOffset: activity.isJamieAdded ? 1 : undefined,
-                      }}
+                    style={{
+                      backgroundColor: color,
+                      outline: isCurrent
+                        ? `4px solid ${color}33`
+                        : activity.isJamieAdded
+                          ? `3px solid ${color}22`
+                          : undefined,
+                      outlineOffset: isCurrent ? 2 : activity.isJamieAdded ? 1 : undefined,
+                    }}
                     >
                       <ActivityIcon type={activity.type} />
                     </div>
@@ -886,7 +908,6 @@ function TodayTimeline({
     </div>
   )
 }
-
 export function TodayPage() {
   const navigate = useNavigate()
   const { enrichedCalendarEvents } = useGoogleCalendar()
@@ -896,12 +917,29 @@ export function TodayPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [activeWidget, setActiveWidget] = useState<WidgetId | null>(null)
   const [activityStartTime, setActivityStartTime] = useState('09:00')
+  const [nowMinutes, setNowMinutes] = useState(() => {
+    const now = new Date()
+    return now.getHours() * 60 + now.getMinutes()
+  })
 
   const [manualActivities, setManualActivities] = useLocalStorage<TimelineActivity[]>(
     'spoonflow_today_manual_activities',
     [],
   )
 
+  useEffect(() => {
+    const updateNow = () => {
+      const now = new Date()
+      setNowMinutes(now.getHours() * 60 + now.getMinutes())
+    }
+
+    updateNow()
+
+    const interval = window.setInterval(updateNow, 60000)
+
+    return () => window.clearInterval(interval)
+  }, [])
+  
   const todayKey = useMemo(() => todayDateKey(), [])
 
   const contactById = useMemo(() => {
@@ -1167,6 +1205,7 @@ export function TodayPage() {
 
         <TodayTimeline
           activities={timelineActivities}
+          nowMinutes={nowMinutes}
           onDeleteManualActivity={(id) =>
             setManualActivities((prev) => prev.filter((item) => item.id !== id))
           }
