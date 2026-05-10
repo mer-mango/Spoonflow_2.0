@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AddActivityModal } from '../components/today/AddActivityModal'
 import type { TimelineActivity } from '../components/today/TimelineBlock'
@@ -259,7 +259,7 @@ function WidgetCard({
   color: string
   activeWidget: WidgetId | null
   setActiveWidget: (value: WidgetId | null) => void
-  children: React.ReactNode
+  children: ReactNode
 }) {
   const open = activeWidget === id
 
@@ -307,6 +307,55 @@ function WidgetCard({
 
 function EmptyWidgetRow({ label }: { label: string }) {
   return <div className="px-3 py-3 text-[11px] text-[var(--muted)]">{label}</div>
+}
+
+function TaskWidgetRow({
+  task,
+  todayKey,
+  onClick,
+}: {
+  task: Task
+  todayKey: string
+  onClick: () => void
+}) {
+  const overdue = isOverdueDate(task.due_date, todayKey)
+  const dueToday = isTodayDate(task.due_date, todayKey)
+
+  let dueChip = formatDueLabel(task.due_date)
+  let chipClass = 'bg-[#f5f2ef] text-[var(--muted)]'
+
+  if (overdue) {
+    dueChip = `overdue · ${formatDueLabel(task.due_date)}`
+    chipClass = 'bg-[rgba(201,136,142,0.13)] text-[#c9888e]'
+  } else if (dueToday) {
+    dueChip = 'due today'
+    chipClass = 'bg-[rgba(193,152,173,0.14)] text-[#9f6e89]'
+  } else if (!task.due_date) {
+    dueChip = 'no due date'
+  }
+
+  return (
+    <button
+      type="button"
+      className="block w-full border-b border-[rgba(44,44,42,0.06)] px-3 py-2 text-left last:border-b-0"
+      onClick={onClick}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 truncate text-[11.5px] font-medium">{task.title}</p>
+        {task.starred && <span className="shrink-0 text-[#f0c040]">★</span>}
+      </div>
+
+      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+        <span className="text-[10px] text-[var(--muted)]">
+          {taskTypeLabel(task.task_type)} · {taskStatusLabel(task.status)} · {task.estimated_minutes}m
+        </span>
+
+        <span className={`rounded px-1.5 py-0.5 text-[10px] ${chipClass}`}>
+          {dueChip}
+        </span>
+      </div>
+    </button>
+  )
 }
 
 function TimelineGap({
@@ -364,6 +413,7 @@ function TodayTimeline({
       {sorted.length === 0 ? (
         <div>
           <TimelineGap minutes={dayEnd - dayStart} afterMinutes={dayStart} onAdd={onAddActivity} />
+
           <div className="px-6 pb-4 text-center text-sm text-[var(--muted)]">
             Nothing scheduled yet. Add an activity to start shaping the day.
           </div>
@@ -494,18 +544,34 @@ export function TodayPage() {
 
   const activeTasks = useMemo(() => tasks.filter(isActiveTask), [tasks])
 
-  const todayTasks = useMemo(
-    () => activeTasks.filter((task) => isTodayDate(task.due_date, todayKey)),
-    [activeTasks, todayKey],
-  )
-
   const overdueTasks = useMemo(
     () => activeTasks.filter((task) => isOverdueDate(task.due_date, todayKey)),
     [activeTasks, todayKey],
   )
 
-  const focusTasks = useMemo(() => {
-    const combined = [...overdueTasks, ...todayTasks]
+  const todayTasks = useMemo(
+    () => activeTasks.filter((task) => isTodayDate(task.due_date, todayKey)),
+    [activeTasks, todayKey],
+  )
+
+  const starredTasks = useMemo(
+    () => activeTasks.filter((task) => task.starred),
+    [activeTasks],
+  )
+
+  const otherActiveTasks = useMemo(
+    () =>
+      activeTasks.filter(
+        (task) =>
+          !isOverdueDate(task.due_date, todayKey) &&
+          !isTodayDate(task.due_date, todayKey) &&
+          !task.starred,
+      ),
+    [activeTasks, todayKey],
+  )
+
+  const orderedTaskWidgetItems = useMemo(() => {
+    const combined = [...overdueTasks, ...todayTasks, ...starredTasks, ...otherActiveTasks]
     const seen = new Set<string>()
 
     return combined.filter((task) => {
@@ -513,7 +579,7 @@ export function TodayPage() {
       seen.add(task.id)
       return true
     })
-  }, [overdueTasks, todayTasks])
+  }, [overdueTasks, todayTasks, starredTasks, otherActiveTasks])
 
   const nurtureDueContacts = useMemo(
     () =>
@@ -570,12 +636,12 @@ export function TodayPage() {
         </div>
 
         <button
-  type="button"
-  className="rounded-full bg-[var(--tasks)] px-4 py-2 text-[11.5px] font-medium text-white shadow-sm transition hover:opacity-90"
-  onClick={() => setOpenAdd(true)}
->
-  + New Timeline Activity
-      </button>      
+          type="button"
+          className="rounded-full bg-[var(--tasks)] px-4 py-2 text-[11.5px] font-medium text-white shadow-sm transition hover:opacity-90"
+          onClick={() => setOpenAdd(true)}
+        >
+          + New Timeline Activity
+        </button>
       </header>
 
       <div className="space-y-3 p-5">
@@ -609,42 +675,22 @@ export function TodayPage() {
           <WidgetCard
             id="tasks"
             label="Tasks"
-            count={focusTasks.length}
+            count={activeTasks.length}
             color="#c198ad"
             activeWidget={activeWidget}
             setActiveWidget={setActiveWidget}
           >
-            {focusTasks.length === 0 ? (
-              <EmptyWidgetRow label="No due or overdue active tasks." />
+            {orderedTaskWidgetItems.length === 0 ? (
+              <EmptyWidgetRow label="No active tasks right now." />
             ) : (
-              focusTasks.slice(0, 6).map((task) => {
-                const overdue = isOverdueDate(task.due_date, todayKey)
-
-                return (
-                  <button
-                    key={task.id}
-                    type="button"
-                    className="block w-full border-b border-[rgba(44,44,42,0.06)] px-3 py-2 text-left last:border-b-0"
-                    onClick={() => navigate(`/tasks/${task.id}`)}
-                  >
-                    <p className="text-[11.5px] font-medium">{task.title}</p>
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                      <span className="text-[10px] text-[var(--muted)]">
-                        {taskTypeLabel(task.task_type)} · {taskStatusLabel(task.status)}
-                      </span>
-                      <span
-                        className={`rounded px-1.5 py-0.5 text-[10px] ${
-                          overdue
-                            ? 'bg-[rgba(201,136,142,0.13)] text-[#c9888e]'
-                            : 'bg-[#f5f2ef] text-[var(--muted)]'
-                        }`}
-                      >
-                        {overdue ? 'overdue' : `due ${formatDueLabel(task.due_date)}`}
-                      </span>
-                    </div>
-                  </button>
-                )
-              })
+              orderedTaskWidgetItems.slice(0, 8).map((task) => (
+                <TaskWidgetRow
+                  key={task.id}
+                  task={task}
+                  todayKey={todayKey}
+                  onClick={() => navigate(`/tasks/${task.id}`)}
+                />
+              ))
             )}
           </WidgetCard>
 
