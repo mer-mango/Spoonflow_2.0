@@ -24,6 +24,14 @@ type Props = {
 
 type Tab = 'information' | 'interactions' | 'notes' | 'tasks' | 'nurture'
 type ContactTaskView = 'active' | 'done'
+type NurtureLogEntry = {
+  id: string
+  contactId: string
+  createdAt: string
+  entry: string
+  nextNurtureDate: string | null
+  frequencyDays: number | null
+}
 
 const nurtureOptions = [
   { label: 'None', value: '' },
@@ -66,7 +74,29 @@ function isoFromDateInput(value: string) {
 
   return date.toISOString()
 }
+function addDaysDateInput(days: number) {
+  const date = new Date()
+  date.setDate(date.getDate() + days)
 
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+function nurtureLogStorageKey(contactId: string) {
+  return `spoonflow_nurture_logs_${contactId}`
+}
+
+function formatTimestamp(value: string) {
+  return new Date(value).toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
 function text(value?: string | null) {
   return value ?? ''
 }
