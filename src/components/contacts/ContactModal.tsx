@@ -232,6 +232,10 @@ export function ContactModal({
   const [nurtureFrequencyDays, setNurtureFrequencyDays] = useState('')
   const [nextNurtureDate, setNextNurtureDate] = useState('')
   const [starred, setStarred] = useState(false)
+  const [nurtureLogOpen, setNurtureLogOpen] = useState(false)
+  const [nurtureLogEntry, setNurtureLogEntry] = useState('')
+  const [nurtureLogNextDate, setNurtureLogNextDate] = useState('')
+  const [nurtureLogs, setNurtureLogs] = useState<NurtureLogEntry[]>([])
 
   const contactTasks = useMemo(
     () => tasks.filter((task) => task.contact_id === contact?.id && !task.archived),
