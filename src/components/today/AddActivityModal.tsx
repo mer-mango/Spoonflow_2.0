@@ -13,22 +13,22 @@ type ActivityOption = {
 const activityOptions: ActivityOption[] = [
   {
     type: 'task',
-    label: 'Tasks',
-    defaultTitle: 'Task Block',
+    label: 'Task',
+    defaultTitle: 'Task',
     color: '#c198ad',
     defaultMinutes: 90,
   },
   {
     type: 'content',
     label: 'Content',
-    defaultTitle: 'Content Block',
+    defaultTitle: 'Content',
     color: '#e2b7be',
     defaultMinutes: 60,
   },
   {
     type: 'nurture',
     label: 'Nurture',
-    defaultTitle: 'Nurture Block',
+    defaultTitle: 'Nurture',
     color: '#8fa790',
     defaultMinutes: 30,
   },
@@ -49,7 +49,7 @@ const activityOptions: ActivityOption[] = [
   {
     type: 'pt',
     label: 'PT',
-    defaultTitle: 'PT / Movement',
+    defaultTitle: 'PT',
     color: '#bcd1d5',
     defaultMinutes: 45,
   },
@@ -75,9 +75,16 @@ const activityOptions: ActivityOption[] = [
     defaultMinutes: 30,
   },
   {
+    type: 'goals',
+    label: 'Goals',
+    defaultTitle: 'Goals',
+    color: '#a389aa',
+    defaultMinutes: 45,
+  },
+  {
     type: 'custom',
     label: 'Custom',
-    defaultTitle: 'Custom Block',
+    defaultTitle: 'Custom',
     color: '#b0b5ba',
     defaultMinutes: 30,
   },
@@ -199,7 +206,7 @@ export function AddActivityModal({
         <div className="space-y-4">
           <div>
             <p className="text-sm text-[var(--muted)]">
-              Select one or more activity blocks and set their durations.
+              Select one or more activity types and set their durations.
             </p>
           </div>
 
