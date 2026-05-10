@@ -927,18 +927,25 @@ export function TodayPage() {
     [],
   )
 
-  useEffect(() => {
-    const updateNow = () => {
-      const now = new Date()
-      setNowMinutes(now.getHours() * 60 + now.getMinutes())
-    }
+useEffect(() => {
+  const updateNow = () => {
+    const now = new Date()
+    setNowMinutes(now.getHours() * 60 + now.getMinutes())
+  }
 
-    updateNow()
+  updateNow()
 
-    const interval = window.setInterval(updateNow, 60000)
+  const interval = window.setInterval(updateNow, 30000)
 
-    return () => window.clearInterval(interval)
-  }, [])
+  window.addEventListener('focus', updateNow)
+  document.addEventListener('visibilitychange', updateNow)
+
+  return () => {
+    window.clearInterval(interval)
+    window.removeEventListener('focus', updateNow)
+    document.removeEventListener('visibilitychange', updateNow)
+  }
+}, [])
   
   const todayKey = useMemo(() => todayDateKey(), [])
 
