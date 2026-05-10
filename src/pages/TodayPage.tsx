@@ -332,11 +332,13 @@ function TaskWidgetRow({
   todayKey,
   contactName,
   onClick,
+  onQuickUpdate,
 }: {
   task: Task
   todayKey: string
   contactName?: string | null
   onClick: () => void
+  onQuickUpdate: (task: Task, patch: Partial<Task>) => Promise<void> | void
 }) {
   const overdue = isOverdueDate(task.due_date, todayKey)
   const dueToday = isTodayDate(task.due_date, todayKey)
@@ -356,20 +358,38 @@ function TaskWidgetRow({
   }
 
   return (
-    <button
-      type="button"
-      className="block w-full border-b border-[rgba(44,44,42,0.06)] px-3 py-2 text-left last:border-b-0"
-      onClick={onClick}
-    >
+    <article className="block w-full border-b border-[rgba(44,44,42,0.06)] px-3 py-2 text-left last:border-b-0">
       <div className="flex items-start justify-between gap-2">
-        <p className="min-w-0 truncate text-[11.5px] font-medium">{task.title}</p>
+        <button
+          type="button"
+          className="min-w-0 flex-1 truncate text-left text-[11.5px] font-medium text-[var(--text)] transition hover:text-[var(--tasks)]"
+          onClick={onClick}
+        >
+          {task.title}
+        </button>
+
         {task.starred && <span className="shrink-0 text-[#f0c040]">★</span>}
       </div>
 
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${statusPillClass(task.status)}`}>
-          {statusLabel(task.status)}
-        </span>
+        <select
+          value={task.status}
+          onChange={(event) =>
+            void onQuickUpdate(task, {
+              status: event.target.value as Task['status'],
+            })
+          }
+          onClick={(event) => event.stopPropagation()}
+          className={`h-[22px] rounded-full border-0 px-2 py-0.5 text-[10px] font-medium outline-none ${statusPillClass(
+            task.status,
+          )}`}
+          title="Edit status"
+        >
+          <option value="toDo">To Do</option>
+          <option value="inProgress">In Progress</option>
+          <option value="awaitingReply">Awaiting Reply</option>
+          <option value="done">Done</option>
+        </select>
 
         {contactName && (
           <span className="rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92]">
@@ -383,15 +403,42 @@ function TaskWidgetRow({
           </span>
         )}
 
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${chipClass}`}>
-          {dueChip}
-        </span>
+        <input
+          type="date"
+          value={task.due_date ?? ''}
+          onChange={(event) =>
+            void onQuickUpdate(task, {
+              due_date: event.target.value || null,
+            })
+          }
+          onClick={(event) => event.stopPropagation()}
+          className={`h-[22px] max-w-[112px] rounded-full border-0 px-2 py-0.5 text-[10px] font-medium outline-none ${chipClass}`}
+          title={dueChip}
+        />
 
-        <span className="rounded-full bg-[#f3f2ef] px-2 py-0.5 text-[10px] font-medium text-[var(--muted)]">
-          {task.estimated_minutes}m
-        </span>
+        <select
+          value={String(task.estimated_minutes ?? 30)}
+          onChange={(event) =>
+            void onQuickUpdate(task, {
+              estimated_minutes: Number(event.target.value),
+            })
+          }
+          onClick={(event) => event.stopPropagation()}
+          className="h-[22px] rounded-full border-0 bg-[#f3f2ef] px-2 py-0.5 text-[10px] font-medium text-[var(--muted)] outline-none"
+          title="Edit estimated time"
+        >
+          <option value="5">5m</option>
+          <option value="10">10m</option>
+          <option value="15">15m</option>
+          <option value="20">20m</option>
+          <option value="30">30m</option>
+          <option value="45">45m</option>
+          <option value="60">1h</option>
+          <option value="90">1.5h</option>
+          <option value="120">2h</option>
+        </select>
       </div>
-    </button>
+    </article>
   )
 }
 
@@ -741,12 +788,15 @@ export function TodayPage() {
             ) : (
               orderedTaskWidgetItems.slice(0, 8).map((task) => (
                 <TaskWidgetRow
-                  key={task.id}
-                  task={task}
-                  todayKey={todayKey}
-                  contactName={task.contact_id ? contactById.get(task.contact_id) ?? null : null}
-                  onClick={() => setSelectedTask(task)}
-                />
+              key={task.id}
+              task={task}
+              todayKey={todayKey}
+              contactName={task.contact_id ? contactById.get(task.contact_id) ?? null : null}
+              onClick={() => setSelectedTask(task)}
+              onQuickUpdate={async (item, patch) => {
+                await updateTask(item.id, patch)
+              }}
+            />
               ))
             )}
           </WidgetCard>
@@ -827,16 +877,23 @@ export function TodayPage() {
   onCreate={(activity) => setManualActivities((prev) => [...prev, activity])}
 />
 
-<TaskModal
-  open={Boolean(selectedTask)}
-  task={selectedTask}
-  onClose={() => setSelectedTask(null)}
-  onSave={async (id, patch) => {
-    if (!id) return
+      <AddActivityModal
+        open={openAdd}
+        onClose={() => setOpenAdd(false)}
+        defaultStart={activityStartTime}
+        onCreate={(activity) => setManualActivities((prev) => [...prev, activity])}
+      />
 
-    await updateTask(id, patch)
-  }}
-/>
+      <TaskModal
+        open={Boolean(selectedTask)}
+        task={selectedTask}
+        onClose={() => setSelectedTask(null)}
+        onSave={async (id, patch) => {
+          if (!id) return
+
+          await updateTask(id, patch)
+        }}
+      />
     </section>
   )
 }
