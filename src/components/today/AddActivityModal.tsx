@@ -104,12 +104,14 @@ export function AddActivityModal({
   open,
   onClose,
   onCreate,
+  defaultStart = '09:00',
 }: {
   open: boolean
   onClose: () => void
   onCreate: (activity: TimelineActivity) => void
+  defaultStart?: string
 }) {
-  const [start, setStart] = useState('09:00')
+  const [start, setStart] = useState(defaultStart)
   const [selectedTypes, setSelectedTypes] = useState<ActivityType[]>([])
   const [durations, setDurations] = useState<Record<string, number>>({})
   const [customTitles, setCustomTitles] = useState<Record<string, string>>({})
@@ -117,10 +119,11 @@ export function AddActivityModal({
   useEffect(() => {
     if (!open) return
 
+    setStart(defaultStart)
     setSelectedTypes([])
     setDurations({})
     setCustomTitles({})
-  }, [open])
+  }, [open, defaultStart])
 
   const toggleType = (type: ActivityType) => {
     setSelectedTypes((prev) => {
