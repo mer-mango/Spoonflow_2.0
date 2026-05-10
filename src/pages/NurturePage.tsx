@@ -1,12 +1,10 @@
 import { useNavigate } from 'react-router-dom'
 import { NurtureBuckets } from '../components/nurture/NurtureBuckets'
-import { useToast } from '../components/shared/Toast'
 import { useNurture } from '../hooks/useNurture'
 
 export function NurturePage() {
   const navigate = useNavigate()
-  const { contacts, isLoading, markDone } = useNurture()
-  const { notify } = useToast()
+  const { contacts, isLoading } = useNurture()
 
   return (
     <section className="overflow-hidden rounded-xl border-[0.5px] border-[var(--border)] bg-[var(--bg)]">
@@ -38,14 +36,7 @@ export function NurturePage() {
         ) : (
           <NurtureBuckets
             contacts={contacts}
-            onOpen={(contact) => navigate(`/contacts/${contact.id}`)}
-            onDone={async (contact) => {
-              const { error } = await markDone(contact)
-
-              if (!error) {
-                notify('Nurture touch logged and date advanced')
-              }
-            }}
+            onOpen={(contact) => navigate(`/contacts/${contact.id}?tab=nurture`)}
           />
         )}
       </div>
