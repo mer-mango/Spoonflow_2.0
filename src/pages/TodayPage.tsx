@@ -127,13 +127,6 @@ function formatDueLabel(value?: string | null) {
   })
 }
 
-function statusLabel(status: Task['status']) {
-  if (status === 'toDo') return 'To Do'
-  if (status === 'inProgress') return 'In Progress'
-  if (status === 'awaitingReply') return 'Awaiting Reply'
-  return 'Done'
-}
-
 function statusPillClass(status: Task['status']) {
   if (status === 'toDo') return 'bg-[rgba(193,152,173,0.16)] text-[#9f6e89]'
   if (status === 'inProgress') return 'bg-[rgba(100,132,161,0.16)] text-[#6484a1]'
