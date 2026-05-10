@@ -1,3 +1,6 @@
+Yes — here’s the full **MobileNav.tsx** again, with the **Content icon changed to a pencil**.
+
+```tsx
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 
@@ -27,33 +30,80 @@ function Icon({ name }: { name: Tab['icon'] }) {
     case 'today':
       return (
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M3 10.5 12 3l9 7.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M6 10v9h12v-9" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+          <path
+            d="M3 10.5 12 3l9 7.5"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M6 10v9h12v-9"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+          />
         </svg>
       )
+
     case 'contacts':
       return (
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth="2.2" />
-          <path d="M3.5 20c0-3.2 2.4-5 5.5-5s5.5 1.8 5.5 5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-          <path d="M15 12.5c2 .1 3.5 1.7 3.5 4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+          <path
+            d="M3.5 20c0-3.2 2.4-5 5.5-5s5.5 1.8 5.5 5"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M15 12.5c2 .1 3.5 1.7 3.5 4"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+          />
           <circle cx="16" cy="8.5" r="2.2" stroke="currentColor" strokeWidth="2.2" />
         </svg>
       )
+
     case 'tasks':
       return (
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="m5 12 3 3 6-7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M15 12h4M15 17h4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+          <path
+            d="m5 12 3 3 6-7"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M15 12h4M15 17h4"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+          />
         </svg>
       )
+
     case 'content':
       return (
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M6 4h12a1 1 0 0 1 1 1v14l-3-2-3 2-3-2-3 2V5a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="2.1" strokeLinejoin="round" />
-          <path d="M9 8h6M9 12h5" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
+          <path
+            d="M16.8 4.2 19.8 7.2 8.1 18.9 4.4 19.6 5.1 15.9 16.8 4.2Z"
+            stroke="currentColor"
+            strokeWidth="2.1"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M15.3 5.7 18.3 8.7"
+            stroke="currentColor"
+            strokeWidth="2.1"
+            strokeLinecap="round"
+          />
         </svg>
       )
+
     case 'more':
       return (
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -107,10 +157,14 @@ export function MobileNav() {
                 <button
                   key={tab.path}
                   type="button"
-                  className={`flex flex-col items-center justify-center gap-1 text-[11px] font-medium ${moreOpen ? 'text-[var(--jamie)]' : 'text-[var(--muted)]'}`}
+                  className={`flex flex-col items-center justify-center gap-1 text-[11px] font-medium ${
+                    moreOpen ? 'text-[var(--jamie)]' : 'text-[var(--muted)]'
+                  }`}
                   onClick={() => setMoreOpen((value) => !value)}
                 >
-                  <span className="h-[20px] w-[20px]"><Icon name={tab.icon} /></span>
+                  <span className="h-[20px] w-[20px]">
+                    <Icon name={tab.icon} />
+                  </span>
                   <span>{tab.label}</span>
                 </button>
               )
@@ -121,10 +175,14 @@ export function MobileNav() {
                 key={tab.path}
                 to={tab.path}
                 className={({ isActive }) =>
-                  `flex flex-col items-center justify-center gap-1 text-[11px] font-medium ${isActive ? 'text-[var(--jamie)]' : 'text-[var(--muted)]'}`
+                  `flex flex-col items-center justify-center gap-1 text-[11px] font-medium ${
+                    isActive ? 'text-[var(--jamie)]' : 'text-[var(--muted)]'
+                  }`
                 }
               >
-                <span className="h-[20px] w-[20px]"><Icon name={tab.icon} /></span>
+                <span className="h-[20px] w-[20px]">
+                  <Icon name={tab.icon} />
+                </span>
                 <span>{tab.label}</span>
               </NavLink>
             )
@@ -134,3 +192,4 @@ export function MobileNav() {
     </>
   )
 }
+```
