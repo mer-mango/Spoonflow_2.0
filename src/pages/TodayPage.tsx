@@ -48,23 +48,24 @@ const timelineActivityOptions: Array<{
   type: TimelineActivity['type']
   title: string
 }> = [
-  { type: 'task', title: 'Task Block' },
-  { type: 'content', title: 'Content Block' },
-  { type: 'nurture', title: 'Nurture Block' },
+  { type: 'task', title: 'Task' },
+  { type: 'content', title: 'Content' },
+  { type: 'nurture', title: 'Nurture' },
   { type: 'email', title: 'Email' },
   { type: 'break', title: 'Break' },
-  { type: 'pt', title: 'PT / Movement' },
+  { type: 'pt', title: 'PT' },
   { type: 'professional-dev', title: 'Professional Development' },
   { type: 'lunch', title: 'Lunch' },
   { type: 'wind-down', title: 'Wind Down' },
-  { type: 'custom', title: 'Custom Block' },
+  { type: 'custom', title: 'Custom' },
 ]
 
 function timelineActivityOptionForType(type: TimelineActivity['type']) {
   return timelineActivityOptions.find((option) => option.type === type)
 }
+
 const timelineTimeTextClass =
-  'w-[68px] border-0 bg-transparent p-0 text-right text-[11.5px] font-medium text-[var(--muted)] outline-none transition hover:text-[var(--text)] focus:text-[var(--text)]'
+  'w-[76px] border-0 bg-transparent p-0 text-right text-[11.5px] font-medium text-[var(--muted)] outline-none transition hover:text-[var(--text)] focus:text-[var(--text)]'
 
 const timelineDurationSelectClass =
   'appearance-none border-0 bg-transparent p-0 pr-0 text-[11px] font-normal text-[var(--muted)] outline-none transition hover:text-[var(--text)] focus:text-[var(--text)]'
@@ -289,10 +290,82 @@ function ActivityIcon({ type }: { type: string }) {
     )
   }
 
+  if (type === 'nurture') {
+    return (
+      <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none">
+        <path d="M7 12V7.5" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
+        <path d="M7 7.5C5.2 7.2 3.8 6 3.4 4.2C5.2 4 6.6 4.8 7 7.5Z" stroke="white" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M7 7.5C8.8 7.1 10.2 5.9 10.6 4.1C8.8 3.9 7.4 4.8 7 7.5Z" stroke="white" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+
+  if (type === 'content') {
+    return (
+      <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none">
+        <path d="M7.2 1.8L12 6.6" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
+        <path d="M8.1 2.7L4.5 6.3C4 6.8 4 7.6 4.5 8.1L5.9 9.5C6.4 10 7.2 10 7.7 9.5L11.3 5.9" stroke="white" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M4.8 9.2L2.2 11.8" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
+      </svg>
+    )
+  }
+
+  if (type === 'professional-dev' || type === 'prodev') {
+    return (
+      <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none">
+        <path d="M2.5 2.5h3.2C6.4 2.5 7 3.1 7 3.8v7.7c0-.8-.6-1.4-1.3-1.4H2.5V2.5Z" stroke="white" strokeWidth="1.3" strokeLinejoin="round" />
+        <path d="M11.5 2.5H8.3C7.6 2.5 7 3.1 7 3.8v7.7c0-.8.6-1.4 1.3-1.4h3.2V2.5Z" stroke="white" strokeWidth="1.3" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+
+  if (type === 'break' || type === 'brk') {
+    return (
+      <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none">
+        <path d="M5 3v8M9 3v8" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    )
+  }
+
+  if (type === 'email') {
+    return (
+      <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none">
+        <rect x="1.8" y="3" width="10.4" height="8" rx="1.4" stroke="white" strokeWidth="1.4" />
+        <path d="M2.2 4.2L7 7.5l4.8-3.3" stroke="white" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+
+  if (type === 'pt') {
+    return (
+      <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none">
+        <circle cx="4" cy="10" r="2" stroke="white" strokeWidth="1.3" />
+        <circle cx="10" cy="10" r="2" stroke="white" strokeWidth="1.3" />
+        <path d="M5.2 10L7 6.5l1.7 3.5M7 6.5h2M6 4.3h2" stroke="white" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+
+  if (type === 'lunch') {
+    return (
+      <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none">
+        <path d="M4 2v10M2.8 2v3.2C2.8 6.1 3.3 6.8 4 6.8s1.2-.7 1.2-1.6V2" stroke="white" strokeWidth="1.3" strokeLinecap="round" />
+        <path d="M9.5 2.2c1.1.5 1.8 1.7 1.8 3.2v6.6M9.5 2.2v4.6h1.8" stroke="white" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+
+  if (type === 'wind-down' || type === 'winddown') {
+    return (
+      <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none">
+        <path d="M10.8 9.6A5 5 0 0 1 4.4 3.2A5 5 0 1 0 10.8 9.6Z" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+
   return (
     <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none">
-      <circle cx="7" cy="7" r="4" stroke="white" strokeWidth="1.4" />
-      <path d="M7 5v4M5 7h4" stroke="white" strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="7" cy="7" r="2.2" fill="white" />
     </svg>
   )
 }
@@ -515,9 +588,11 @@ function TimelineGap({
 
 function TimelineStartTimeInput({
   activity,
+  hasOverlap,
   onUpdateStart,
 }: {
   activity: TimelineDisplayItem
+  hasOverlap: boolean
   onUpdateStart: (activity: TimelineDisplayItem, nextStart: string) => void
 }) {
   const [value, setValue] = useState(displayTimeLabel(activity.start))
@@ -539,7 +614,12 @@ function TimelineStartTimeInput({
 
   if (!activity.isManual) {
     return (
-      <div className="w-[86px] shrink-0 pr-5 pt-2 text-right text-[11.5px] font-medium text-[var(--muted)]">
+      <div
+        className={`w-[86px] shrink-0 pr-5 pt-2 text-right text-[11.5px] font-medium ${
+          hasOverlap ? 'text-[#c9888e]' : 'text-[var(--muted)]'
+        }`}
+        title={hasOverlap ? 'This activity overlaps with the previous activity.' : undefined}
+      >
         {displayTimeLabel(activity.start)}
       </div>
     )
@@ -561,8 +641,10 @@ function TimelineStartTimeInput({
             event.currentTarget.blur()
           }
         }}
-        className={timelineTimeTextClass}
-        title="Edit start time"
+        className={`${timelineTimeTextClass} ${
+          hasOverlap ? 'text-[#c9888e] focus:text-[#c9888e]' : ''
+        }`}
+        title={hasOverlap ? 'This activity overlaps with the previous activity.' : 'Edit start time'}
         aria-label="Edit start time"
       />
     </div>
@@ -632,16 +714,31 @@ function TodayTimeline({
 
           {sorted.map((activity, index) => {
             const color = activityColors[activity.type] ?? activityColors.custom
+            const start = minutesFromTimeLabel(activity.start)
             const end = minutesFromTimeLabel(activity.end)
+            const previous = sorted[index - 1]
+            const previousEnd = previous ? minutesFromTimeLabel(previous.end) : null
             const next = sorted[index + 1]
             const nextStart = next ? minutesFromTimeLabel(next.start) : null
-            const gap = nextStart ? nextStart - end : 0
+            const gap =
+              nextStart !== null && Number.isFinite(nextStart) && Number.isFinite(end)
+                ? nextStart - end
+                : 0
             const isLast = index === sorted.length - 1
+            const hasOverlap =
+              previousEnd !== null &&
+              Number.isFinite(previousEnd) &&
+              Number.isFinite(start) &&
+              start < previousEnd
 
             return (
               <div key={activity.id}>
                 <div className="flex items-start">
-                  <TimelineStartTimeInput activity={activity} onUpdateStart={updateManualStart} />
+                  <TimelineStartTimeInput
+                    activity={activity}
+                    hasOverlap={hasOverlap}
+                    onUpdateStart={updateManualStart}
+                  />
 
                   <div className="flex w-9 shrink-0 flex-col items-center">
                     <div
@@ -666,33 +763,41 @@ function TodayTimeline({
                   <div className="min-w-0 flex-1 px-4 pb-5 pt-1">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                    {activity.isManual ? (
-                      <select
-                        value={activity.type}
-                        onChange={(event) => {
-              const nextType = event.target.value as TimelineActivity['type']
-              const nextOption = timelineActivityOptionForType(nextType)
-                      onUpdateManualActivity(activity.id, {
-                        type: nextType,
-                        title: nextOption?.title ?? activity.title,
-                      })
-                    }}
-                    className="w-full appearance-none truncate border-0 bg-transparent px-0 py-0 text-[13px] font-medium leading-snug text-[var(--text)] outline-none transition hover:text-[var(--tasks)] focus:text-[var(--tasks)]"
-                    aria-label="Edit activity type"
-                    title="Edit activity type"
-                  >
-                    {timelineActivityOptions.map((option) => (
-                      <option key={option.type} value={option.type}>
-                        {option.title}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <p className="truncate text-[13px] font-medium leading-snug text-[var(--text)]">
-                    {activity.title}
-                  </p>
-                )}
-                                        {activity.isManual ? (
+                        {activity.isManual ? (
+                          <select
+                            value={activity.type}
+                            onChange={(event) => {
+                              const nextType = event.target.value as TimelineActivity['type']
+                              const nextOption = timelineActivityOptionForType(nextType)
+
+                              onUpdateManualActivity(activity.id, {
+                                type: nextType,
+                                title: nextOption?.title ?? activity.title,
+                              })
+                            }}
+                            className="w-full appearance-none truncate border-0 bg-transparent px-0 py-0 text-[13px] font-medium leading-snug text-[var(--text)] outline-none transition hover:text-[var(--tasks)] focus:text-[var(--tasks)]"
+                            aria-label="Edit activity type"
+                            title="Edit activity type"
+                          >
+                            {timelineActivityOptions.map((option) => (
+                              <option key={option.type} value={option.type}>
+                                {option.title}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <p className="truncate text-[13px] font-medium leading-snug text-[var(--text)]">
+                            {activity.title}
+                          </p>
+                        )}
+
+                        {hasOverlap && (
+                          <p className="mt-1 text-[11px] font-medium text-[#c9888e]">
+                            Overlaps previous activity — adjust start time or duration.
+                          </p>
+                        )}
+
+                        {activity.isManual ? (
                           <div className="mt-1 flex flex-wrap items-center gap-2">
                             <select
                               value={String(activity.durationMinutes)}
