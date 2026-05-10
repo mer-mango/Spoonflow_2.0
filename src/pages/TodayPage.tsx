@@ -44,6 +44,12 @@ const activityColors: Record<string, string> = {
   custom: '#b0b5ba',
 }
 
+const timelineTextControlClass =
+  'h-auto border-0 bg-transparent p-0 text-[11px] font-normal text-[var(--muted)] outline-none transition hover:text-[var(--text)] focus:text-[var(--text)]'
+
+const timelineDurationSelectClass =
+  'h-auto appearance-none border-0 bg-transparent p-0 pr-0 text-[11px] font-normal text-[var(--muted)] outline-none transition hover:text-[var(--text)] focus:text-[var(--text)]'
+
 function todayDateKey() {
   const now = new Date()
   const year = now.getFullYear()
@@ -585,13 +591,14 @@ function TodayTimeline({
                         )}
 
                         {activity.isManual ? (
-                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          <div className="mt-1 flex flex-wrap items-center gap-2">
                             <input
-                              type="time"
+                              type="text"
                               value={startInputValue}
                               onChange={(event) => updateManualStart(activity, event.target.value)}
-                              className="h-[24px] rounded-full border-0 bg-[#f3f2ef] px-2.5 py-1 text-[10.5px] font-medium text-[var(--muted)] outline-none"
+                              className={`${timelineTextControlClass} w-[48px]`}
                               title="Edit start time"
+                              aria-label="Edit start time"
                             />
 
                             <select
@@ -599,8 +606,9 @@ function TodayTimeline({
                               onChange={(event) =>
                                 updateManualDuration(activity, Number(event.target.value))
                               }
-                              className="h-[24px] rounded-full border-0 bg-[#f3f2ef] px-2.5 py-1 text-[10.5px] font-medium text-[var(--muted)] outline-none"
+                              className={timelineDurationSelectClass}
                               title="Edit duration"
+                              aria-label="Edit duration"
                             >
                               <option value="5">5m</option>
                               <option value="10">10m</option>
@@ -612,13 +620,6 @@ function TodayTimeline({
                               <option value="90">1.5h</option>
                               <option value="120">2h</option>
                             </select>
-
-                            <span
-                              className="rounded-full px-2.5 py-1 text-[10.5px] font-medium text-white"
-                              style={{ backgroundColor: color }}
-                            >
-                              Manual
-                            </span>
                           </div>
                         ) : (
                           <p className="mt-1 text-[11px] text-[var(--muted)]">
