@@ -36,8 +36,10 @@ const activityColors: Record<string, string> = {
   email: '#b8a7c9',
   pt: '#bcd1d5',
   prodev: '#93738e',
+  'professional-dev': '#9eafa4',
   lunch: '#d4b5a0',
   winddown: '#93738e',
+  'wind-down': '#93738e',
   custom: '#b0b5ba',
 }
 
@@ -124,21 +126,28 @@ function formatDueLabel(value?: string | null) {
   })
 }
 
-function taskStatusLabel(status: Task['status']) {
+function statusLabel(status: Task['status']) {
   if (status === 'toDo') return 'To Do'
   if (status === 'inProgress') return 'In Progress'
   if (status === 'awaitingReply') return 'Awaiting Reply'
   return 'Done'
 }
 
+function statusPillClass(status: Task['status']) {
+  if (status === 'toDo') return 'bg-[rgba(193,152,173,0.16)] text-[#9f6e89]'
+  if (status === 'inProgress') return 'bg-[rgba(100,132,161,0.16)] text-[#6484a1]'
+  if (status === 'awaitingReply') return 'bg-[#eee9e1] text-[#7f786f]'
+  return 'bg-[rgba(143,167,144,0.18)] text-[#6f8d70]'
+}
+
 function taskTypeLabel(value?: string | null) {
-  if (!value) return 'Task'
+  if (!value) return null
 
   const labels: Record<string, string> = {
     admin: 'Admin',
     outreach: 'Outreach',
     client_work: 'Client Work',
-    business_development: 'Business Development',
+    business_development: 'Business Dev',
     schedule: 'Schedule',
     other: 'Other',
   }
@@ -165,6 +174,14 @@ function minutesFromTimeLabel(label: string) {
   if (meridiem === 'am' && hour === 12) hour = 0
 
   return hour * 60 + minute
+}
+
+function timeValueFromMinutes(totalMinutes: number) {
+  const safeMinutes = Math.max(0, Math.min(totalMinutes, 23 * 60 + 59))
+  const hour = Math.floor(safeMinutes / 60)
+  const minute = safeMinutes % 60
+
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
 }
 
 function timeLabelFromMinutes(totalMinutes: number) {
@@ -312,14 +329,17 @@ function EmptyWidgetRow({ label }: { label: string }) {
 function TaskWidgetRow({
   task,
   todayKey,
+  contactName,
   onClick,
 }: {
   task: Task
   todayKey: string
+  contactName?: string | null
   onClick: () => void
 }) {
   const overdue = isOverdueDate(task.due_date, todayKey)
   const dueToday = isTodayDate(task.due_date, todayKey)
+  const typeLabel = taskTypeLabel(task.task_type)
 
   let dueChip = formatDueLabel(task.due_date)
   let chipClass = 'bg-[#f5f2ef] text-[var(--muted)]'
@@ -345,13 +365,29 @@ function TaskWidgetRow({
         {task.starred && <span className="shrink-0 text-[#f0c040]">★</span>}
       </div>
 
-      <div className="mt-1 flex flex-wrap items-center gap-1.5">
-        <span className="text-[10px] text-[var(--muted)]">
-          {taskTypeLabel(task.task_type)} · {taskStatusLabel(task.status)} · {task.estimated_minutes}m
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${statusPillClass(task.status)}`}>
+          {statusLabel(task.status)}
         </span>
 
-        <span className={`rounded px-1.5 py-0.5 text-[10px] ${chipClass}`}>
+        {contactName && (
+          <span className="rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92]">
+            {contactName}
+          </span>
+        )}
+
+        {typeLabel && (
+          <span className="rounded-full bg-[#f3f2ef] px-2 py-0.5 text-[10px] font-medium text-[#8a867f]">
+            {typeLabel}
+          </span>
+        )}
+
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${chipClass}`}>
           {dueChip}
+        </span>
+
+        <span className="rounded-full bg-[#f3f2ef] px-2 py-0.5 text-[10px] font-medium text-[var(--muted)]">
+          {task.estimated_minutes}m
         </span>
       </div>
     </button>
@@ -365,9 +401,11 @@ function TimelineGap({
 }: {
   minutes: number
   afterMinutes: number
-  onAdd: () => void
+  onAdd: (startTime: string) => void
 }) {
   if (minutes < 15) return null
+
+  const startTime = timeValueFromMinutes(afterMinutes)
 
   return (
     <div className="flex items-center py-5">
@@ -376,7 +414,7 @@ function TimelineGap({
       <div className="flex w-9 shrink-0 justify-center">
         <button
           type="button"
-          onClick={onAdd}
+          onClick={() => onAdd(startTime)}
           className="flex h-5 w-5 items-center justify-center rounded-full border border-dashed border-[#c0bbb5] bg-white text-[#a0968e] transition hover:border-[#8a8078] hover:bg-[#f8f6f3]"
           aria-label="Add activity"
         >
@@ -399,7 +437,7 @@ function TodayTimeline({
 }: {
   activities: TimelineDisplayItem[]
   onDeleteManualActivity: (id: string) => void
-  onAddActivity: () => void
+  onAddActivity: (startTime?: string) => void
 }) {
   const dayStart = 8 * 60
   const dayEnd = 21 * 60
@@ -517,6 +555,7 @@ export function TodayPage() {
   const { contacts } = useContacts()
   const [openAdd, setOpenAdd] = useState(false)
   const [activeWidget, setActiveWidget] = useState<WidgetId | null>(null)
+  const [activityStartTime, setActivityStartTime] = useState('09:00')
 
   const [manualActivities, setManualActivities] = useLocalStorage<TimelineActivity[]>(
     'spoonflow_today_manual_activities',
@@ -524,6 +563,21 @@ export function TodayPage() {
   )
 
   const todayKey = useMemo(() => todayDateKey(), [])
+
+  const contactById = useMemo(() => {
+    const map = new Map<string, string>()
+
+    contacts.forEach((contact) => {
+      map.set(contact.id, contact.name)
+    })
+
+    return map
+  }, [contacts])
+
+  const openAddActivity = (startTime = '09:00') => {
+    setActivityStartTime(startTime)
+    setOpenAdd(true)
+  }
 
   const meetingActivities = useMemo<TimelineActivity[]>(() => {
     const todaysEvents = enrichedCalendarEvents.filter(
@@ -638,7 +692,7 @@ export function TodayPage() {
         <button
           type="button"
           className="rounded-full bg-[var(--tasks)] px-4 py-2 text-[11.5px] font-medium text-white shadow-sm transition hover:opacity-90"
-          onClick={() => setOpenAdd(true)}
+          onClick={() => openAddActivity('09:00')}
         >
           + New Timeline Activity
         </button>
@@ -688,6 +742,7 @@ export function TodayPage() {
                   key={task.id}
                   task={task}
                   todayKey={todayKey}
+                  contactName={task.contact_id ? contactById.get(task.contact_id) ?? null : null}
                   onClick={() => navigate(`/tasks/${task.id}`)}
                 />
               ))
@@ -716,11 +771,26 @@ export function TodayPage() {
                     onClick={() => navigate(`/contacts/${contact.id}`)}
                   >
                     <p className="text-[11.5px] font-medium">{contact.name}</p>
-                    <p className="mt-1 text-[10px] text-[var(--muted)]">
-                      {overdueDays > 0
-                        ? `${overdueDays} day${overdueDays === 1 ? '' : 's'} overdue`
-                        : 'Due today'}
-                    </p>
+
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      {(contact.company || contact.email) && (
+                        <span className="rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92]">
+                          {contact.company || contact.email}
+                        </span>
+                      )}
+
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          overdueDays > 0
+                            ? 'bg-[rgba(201,136,142,0.13)] text-[#c9888e]'
+                            : 'bg-[rgba(143,167,144,0.18)] text-[#6f8d70]'
+                        }`}
+                      >
+                        {overdueDays > 0
+                          ? `${overdueDays} day${overdueDays === 1 ? '' : 's'} overdue`
+                          : 'Due today'}
+                      </span>
+                    </div>
                   </button>
                 )
               })
@@ -744,13 +814,14 @@ export function TodayPage() {
           onDeleteManualActivity={(id) =>
             setManualActivities((prev) => prev.filter((item) => item.id !== id))
           }
-          onAddActivity={() => setOpenAdd(true)}
+          onAddActivity={openAddActivity}
         />
       </div>
 
       <AddActivityModal
         open={openAdd}
         onClose={() => setOpenAdd(false)}
+        defaultStart={activityStartTime}
         onCreate={(activity) => setManualActivities((prev) => [...prev, activity])}
       />
     </section>
