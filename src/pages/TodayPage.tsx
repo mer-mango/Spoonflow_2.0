@@ -474,10 +474,12 @@ function TimelineGap({
 function TodayTimeline({
   activities,
   onDeleteManualActivity,
+  onUpdateManualActivity,
   onAddActivity,
 }: {
   activities: TimelineDisplayItem[]
   onDeleteManualActivity: (id: string) => void
+  onUpdateManualActivity: (id: string, patch: Partial<TimelineActivity>) => void
   onAddActivity: (startTime?: string) => void
 }) {
   const dayStart = 8 * 60
@@ -486,6 +488,25 @@ function TodayTimeline({
   const sorted = [...activities].sort(
     (a, b) => minutesFromTimeLabel(a.start) - minutesFromTimeLabel(b.start),
   )
+
+  const updateManualStart = (activity: TimelineDisplayItem, nextStart: string) => {
+    const nextStartMinutes = minutesFromTimeLabel(nextStart)
+    const nextEnd = timeValueFromMinutes(nextStartMinutes + activity.durationMinutes)
+
+    onUpdateManualActivity(activity.id, {
+      start: nextStart,
+      end: nextEnd,
+    })
+  }
+
+  const updateManualDuration = (activity: TimelineDisplayItem, nextDuration: number) => {
+    const startMinutes = minutesFromTimeLabel(activity.start)
+    const nextEnd = timeValueFromMinutes(startMinutes + nextDuration)
+
+    onUpdateManualActivity(activity.id, {
+      end: nextEnd,
+    })
+  }
 
   return (
     <div className="rounded-[10px] border border-[var(--border)] bg-white py-4">
@@ -506,6 +527,140 @@ function TodayTimeline({
               onAdd={onAddActivity}
             />
           )}
+
+          {sorted.map((activity, index) => {
+            const color = activityColors[activity.type] ?? activityColors.custom
+            const end = minutesFromTimeLabel(activity.end)
+            const next = sorted[index + 1]
+            const nextStart = next ? minutesFromTimeLabel(next.start) : null
+            const gap = nextStart ? nextStart - end : 0
+            const isLast = index === sorted.length - 1
+            const startInputValue = timeValueFromMinutes(minutesFromTimeLabel(activity.start))
+
+            return (
+              <div key={activity.id}>
+                <div className="flex items-start">
+                  <div className="w-[86px] shrink-0 pr-5 pt-2 text-right text-[11.5px] font-medium text-[var(--muted)]">
+                    {activity.start}
+                  </div>
+
+                  <div className="flex w-9 shrink-0 flex-col items-center">
+                    <div
+                      className="flex h-[34px] w-[34px] items-center justify-center rounded-full"
+                      style={{
+                        backgroundColor: color,
+                        outline: activity.isJamieAdded ? `3px solid ${color}22` : undefined,
+                        outlineOffset: activity.isJamieAdded ? 1 : undefined,
+                      }}
+                    >
+                      <ActivityIcon type={activity.type} />
+                    </div>
+
+                    {!isLast && (
+                      <div
+                        className="min-h-5 w-[2px] flex-1"
+                        style={{ backgroundColor: `${color}28` }}
+                      />
+                    )}
+                  </div>
+
+                  <div className="min-w-0 flex-1 px-4 pb-5 pt-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        {activity.isManual ? (
+                          <input
+                            value={activity.title}
+                            onChange={(event) =>
+                              onUpdateManualActivity(activity.id, {
+                                title: event.target.value,
+                              })
+                            }
+                            className="w-full rounded-md border-0 bg-transparent px-0 py-0 text-[13px] font-medium leading-snug text-[var(--text)] outline-none transition focus:border-b focus:border-[var(--tasks)]"
+                            aria-label="Edit activity title"
+                          />
+                        ) : (
+                          <p className="truncate text-[13px] font-medium leading-snug text-[var(--text)]">
+                            {activity.title}
+                          </p>
+                        )}
+
+                        {activity.isManual ? (
+                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            <input
+                              type="time"
+                              value={startInputValue}
+                              onChange={(event) => updateManualStart(activity, event.target.value)}
+                              className="h-[24px] rounded-full border-0 bg-[#f3f2ef] px-2.5 py-1 text-[10.5px] font-medium text-[var(--muted)] outline-none"
+                              title="Edit start time"
+                            />
+
+                            <select
+                              value={String(activity.durationMinutes)}
+                              onChange={(event) =>
+                                updateManualDuration(activity, Number(event.target.value))
+                              }
+                              className="h-[24px] rounded-full border-0 bg-[#f3f2ef] px-2.5 py-1 text-[10.5px] font-medium text-[var(--muted)] outline-none"
+                              title="Edit duration"
+                            >
+                              <option value="5">5m</option>
+                              <option value="10">10m</option>
+                              <option value="15">15m</option>
+                              <option value="20">20m</option>
+                              <option value="30">30m</option>
+                              <option value="45">45m</option>
+                              <option value="60">1h</option>
+                              <option value="90">1.5h</option>
+                              <option value="120">2h</option>
+                            </select>
+
+                            <span
+                              className="rounded-full px-2.5 py-1 text-[10.5px] font-medium text-white"
+                              style={{ backgroundColor: color }}
+                            >
+                              Manual
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="mt-1 text-[11px] text-[var(--muted)]">
+                            {durationLabel(activity.durationMinutes)}
+                            {activity.isJamieAdded ? ' · from calendar' : ''}
+                          </p>
+                        )}
+                      </div>
+
+                      {activity.isManual && (
+                        <button
+                          type="button"
+                          onClick={() => onDeleteManualActivity(activity.id)}
+                          className="text-[15px] leading-none text-[#ccc] transition hover:text-[#c9888e]"
+                          aria-label="Delete activity"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {gap >= 15 && (
+                  <TimelineGap minutes={gap} afterMinutes={end} onAdd={onAddActivity} />
+                )}
+              </div>
+            )
+          })}
+
+          {dayEnd - minutesFromTimeLabel(sorted[sorted.length - 1].end) >= 15 && (
+            <TimelineGap
+              minutes={dayEnd - minutesFromTimeLabel(sorted[sorted.length - 1].end)}
+              afterMinutes={minutesFromTimeLabel(sorted[sorted.length - 1].end)}
+              onAdd={onAddActivity}
+            />
+          )}
+        </>
+      )}
+    </div>
+  )
+}
 
           {sorted.map((activity, index) => {
             const color = activityColors[activity.type] ?? activityColors.custom
@@ -619,6 +774,19 @@ export function TodayPage() {
   const openAddActivity = (startTime = '09:00') => {
     setActivityStartTime(startTime)
     setOpenAdd(true)
+  }
+
+    const updateManualActivity = (id: string, patch: Partial<TimelineActivity>) => {
+    setManualActivities((prev) =>
+      prev.map((activity) =>
+        activity.id === id
+          ? {
+              ...activity,
+              ...patch,
+            }
+          : activity,
+      ),
+    )
   }
 
   const meetingActivities = useMemo<TimelineActivity[]>(() => {
@@ -854,13 +1022,14 @@ export function TodayPage() {
           </WidgetCard>
         </div>
 
-        <TodayTimeline
-          activities={timelineActivities}
-          onDeleteManualActivity={(id) =>
-            setManualActivities((prev) => prev.filter((item) => item.id !== id))
-          }
-          onAddActivity={openAddActivity}
-        />
+           <TodayTimeline
+              activities={timelineActivities}
+              onDeleteManualActivity={(id) =>
+                setManualActivities((prev) => prev.filter((item) => item.id !== id))
+              }
+              onUpdateManualActivity={updateManualActivity}
+              onAddActivity={openAddActivity}
+            />
       </div>
 
       <AddActivityModal
