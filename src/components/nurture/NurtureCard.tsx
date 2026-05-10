@@ -29,11 +29,9 @@ function dateLabel(date: string | null) {
 
 export function NurtureCard({
   contact,
-  onDone,
   onOpen,
 }: {
   contact: NurtureContact
-  onDone: (contact: NurtureContact) => void
   onOpen: (contact: NurtureContact) => void
 }) {
   const delta = daysUntil(contact.next_nurture_date)
@@ -65,17 +63,9 @@ export function NurtureCard({
           </p>
         </div>
 
-        <button
-          type="button"
-          className="flex h-6 w-6 min-w-6 items-center justify-center rounded-full border-[1.5px] border-[#c8c5c0] text-[11px] text-[var(--nurture)] hover:border-[var(--nurture)] hover:bg-[var(--nurture)] hover:text-white"
-          onClick={(event) => {
-            event.stopPropagation()
-            onDone(contact)
-          }}
-          aria-label="Mark nurture done"
-        >
-          ✓
-        </button>
+        <span className="rounded-full bg-[rgba(143,167,144,0.12)] px-2 py-1 text-[10px] font-medium text-[var(--nurture)]">
+          Log
+        </span>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[10.5px] text-[var(--muted)]">
