@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { TaskModal } from '../components/shared/TaskModal'
 import { AddActivityModal } from '../components/today/AddActivityModal'
 import type { TimelineActivity } from '../components/today/TimelineBlock'
 import { useContacts } from '../hooks/useContacts'
@@ -551,9 +552,10 @@ function TodayTimeline({
 export function TodayPage() {
   const navigate = useNavigate()
   const { enrichedCalendarEvents } = useGoogleCalendar()
-  const { tasks } = useTasks()
+  const { tasks, updateTask } = useTasks()
   const { contacts } = useContacts()
   const [openAdd, setOpenAdd] = useState(false)
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [activeWidget, setActiveWidget] = useState<WidgetId | null>(null)
   const [activityStartTime, setActivityStartTime] = useState('09:00')
 
@@ -743,7 +745,7 @@ export function TodayPage() {
                   task={task}
                   todayKey={todayKey}
                   contactName={task.contact_id ? contactById.get(task.contact_id) ?? null : null}
-                  onClick={() => navigate(`/tasks/${task.id}`)}
+                  onClick={() => setSelectedTask(task)}
                 />
               ))
             )}
@@ -819,11 +821,22 @@ export function TodayPage() {
       </div>
 
       <AddActivityModal
-        open={openAdd}
-        onClose={() => setOpenAdd(false)}
-        defaultStart={activityStartTime}
-        onCreate={(activity) => setManualActivities((prev) => [...prev, activity])}
-      />
+  open={openAdd}
+  onClose={() => setOpenAdd(false)}
+  defaultStart={activityStartTime}
+  onCreate={(activity) => setManualActivities((prev) => [...prev, activity])}
+/>
+
+<TaskModal
+  open={Boolean(selectedTask)}
+  task={selectedTask}
+  onClose={() => setSelectedTask(null)}
+  onSave={async (id, patch) => {
+    if (!id) return
+
+    await updateTask(id, patch)
+  }}
+/>
     </section>
   )
 }
