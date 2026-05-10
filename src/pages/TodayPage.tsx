@@ -864,13 +864,6 @@ export function TodayPage() {
       </div>
 
       <AddActivityModal
-  open={openAdd}
-  onClose={() => setOpenAdd(false)}
-  defaultStart={activityStartTime}
-  onCreate={(activity) => setManualActivities((prev) => [...prev, activity])}
-/>
-
-      <AddActivityModal
         open={openAdd}
         onClose={() => setOpenAdd(false)}
         defaultStart={activityStartTime}
