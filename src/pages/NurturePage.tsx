@@ -11,7 +11,9 @@ export function NurturePage() {
   return (
     <section className="overflow-hidden rounded-xl border-[0.5px] border-[var(--border)] bg-[var(--bg)]">
       <header className="border-b-[0.5px] border-[var(--border)] bg-white px-5 py-4">
-        <h1 className="font-serif text-[22px] font-medium tracking-[-0.4px]">Nurture</h1>
+        <h1 className="font-serif text-[22px] font-medium tracking-[-0.4px]">
+          Nurture
+        </h1>
         <p className="mt-0.5 text-[11px] text-[var(--muted)]">
           Relationship follow-ups grouped by timing and urgency.
         </p>
@@ -30,7 +32,9 @@ export function NurturePage() {
 
       <div className="p-4">
         {isLoading ? (
-          <p className="text-[12px] text-[var(--muted)]">Loading nurture contacts…</p>
+          <p className="text-[12px] text-[var(--muted)]">
+            Loading nurture contacts…
+          </p>
         ) : (
           <NurtureBuckets
             contacts={contacts}
