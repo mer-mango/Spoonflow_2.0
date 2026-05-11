@@ -87,10 +87,6 @@ export function NurtureCard({
             </span>
           </div>
         </div>
-
-        <span className="rounded-full bg-[rgba(143,167,144,0.12)] px-2 py-1 text-[10px] font-medium text-[var(--nurture)]">
-          Log
-        </span>
       </div>
     </article>
   )
