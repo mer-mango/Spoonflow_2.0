@@ -45,6 +45,45 @@ const statusColumns: Array<{ id: TaskStatus; label: string }> = [
   { id: 'done', label: 'Done' },
 ]
 
+function kanbanHeaderClasses(columnId: string) {
+  if (columnId === 'toDo') {
+    return {
+      header: 'bg-[rgba(201,136,142,0.13)]',
+      label: 'text-[#b66b73]',
+      count: 'bg-[rgba(201,136,142,0.18)] text-[#b66b73]',
+    }
+  }
+
+  if (columnId === 'inProgress') {
+    return {
+      header: 'bg-[rgba(212,167,122,0.16)]',
+      label: 'text-[#b57943]',
+      count: 'bg-[rgba(212,167,122,0.22)] text-[#b57943]',
+    }
+  }
+
+  if (columnId === 'awaitingReply') {
+    return {
+      header: 'bg-[#f4efe3]',
+      label: 'text-[#9a7b3f]',
+      count: 'bg-[#eadfbd] text-[#9a7b3f]',
+    }
+  }
+
+  if (columnId === 'done') {
+    return {
+      header: 'bg-[rgba(143,167,144,0.16)]',
+      label: 'text-[#6f8d70]',
+      count: 'bg-[rgba(143,167,144,0.22)] text-[#6f8d70]',
+    }
+  }
+
+  return {
+    header: 'bg-[rgba(193,152,173,0.12)]',
+    label: 'text-[#9f6e89]',
+    count: 'bg-[rgba(193,152,173,0.18)] text-[#9f6e89]',
+  }
+}
 const taskTypeColumns = [
   { id: 'admin', label: 'Admin' },
   { id: 'outreach', label: 'Outreach' },
@@ -526,15 +565,25 @@ export function TasksPage() {
                 key={column.id}
                 className="w-full shrink-0 rounded-xl border-[0.5px] border-[var(--border)] bg-white/70 lg:w-[280px]"
               >
-                <header className="mb-2 flex items-center justify-between rounded-[9px] bg-[rgba(193,152,173,0.12)] px-3 py-2.5">
-                  <h2 className="font-['Poppins'] text-[12px] font-semibold text-[#9f6e89]">
+                           {(() => {
+              const headerColors = kanbanHeaderClasses(String(column.id))
+            
+              return (
+                <header
+                  className={`mb-2 flex items-center justify-between rounded-[9px] px-3 py-2.5 ${headerColors.header}`}
+                >
+                  <h2 className={`font-['Poppins'] text-[12px] font-semibold ${headerColors.label}`}>
                     {column.label}
                   </h2>
-          
-                  <span className="rounded-full bg-[rgba(193,152,173,0.18)] px-2 py-0.5 text-[10.5px] font-medium text-[#9f6e89]">
+            
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10.5px] font-medium ${headerColors.count}`}
+                  >
                     {column.tasks.length}
                   </span>
                 </header>
+              )
+            })()}
           
                 <div className="space-y-2 px-1 pb-1">
                   {column.tasks.map((task) => renderTaskCard(task))}
