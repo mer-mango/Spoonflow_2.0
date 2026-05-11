@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { NurtureBuckets } from '../components/nurture/NurtureBuckets'
-import { NurtureModal } from '../components/nurture/NurtureModal'
 import { Modal } from '../components/shared/Modal'
 import { useToast } from '../components/shared/Toast'
-import { useNurture, type NurtureContact } from '../hooks/useNurture'
+import { useNurture } from '../hooks/useNurture'
 
 type SavedNurtureMessage = {
   id: string
@@ -27,9 +27,9 @@ function saveMessages(messages: SavedNurtureMessage[]) {
 }
 
 export function NurturePage() {
-  const { contacts, isLoading, updateNurture, loadNurture } = useNurture()
+  const navigate = useNavigate()
+  const { contacts, isLoading } = useNurture()
   const { notify } = useToast()
-  const [selectedContact, setSelectedContact] = useState<NurtureContact | null>(null)
   const [messagesOpen, setMessagesOpen] = useState(false)
   const [savedMessages, setSavedMessages] = useState<SavedNurtureMessage[]>([])
   const [messageTitle, setMessageTitle] = useState('')
@@ -104,27 +104,12 @@ export function NurturePage() {
         {isLoading ? (
           <p className="text-[12px] text-[var(--muted)]">Loading nurture contacts…</p>
         ) : (
-          <NurtureBuckets contacts={sortedContacts} onOpen={setSelectedContact} />
+          <NurtureBuckets
+            contacts={sortedContacts}
+            onOpen={(contact) => navigate(`/contacts/${contact.id}?tab=nurture`)}
+          />
         )}
       </div>
-
-      <NurtureModal
-        open={Boolean(selectedContact)}
-        contact={selectedContact}
-        onClose={() => setSelectedContact(null)}
-        onSave={async (contactId, patch) => {
-          const result = await updateNurture(contactId, patch)
-
-          if (result.error) {
-            notify(`Nurture update failed: ${result.error.message}`)
-            return result
-          }
-
-          notify('Nurture updated')
-          await loadNurture()
-          return result
-        }}
-      />
 
       <Modal
         open={messagesOpen}
