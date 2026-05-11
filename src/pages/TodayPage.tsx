@@ -1128,31 +1128,51 @@ useEffect(() => {
 
       <div className="space-y-3 p-5">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-          <WidgetCard
-            id="meetings"
-            label="Meetings"
-            count={meetingActivities.length}
-            color="#6484a1"
-            activeWidget={activeWidget}
-            setActiveWidget={setActiveWidget}
-          >
-            {meetingActivities.length === 0 ? (
-              <EmptyWidgetRow label="No meetings found for today." />
-            ) : (
-              meetingActivities.slice(0, 5).map((meeting) => (
-                <button
-                  key={meeting.id}
-                  type="button"
-                  className="block w-full border-b border-[rgba(44,44,42,0.06)] px-3 py-2 text-left last:border-b-0"
-                >
-                  <p className="text-[11.5px] font-medium">{meeting.title}</p>
-                  <p className="mt-1 text-[10px] text-[var(--muted)]">
-                    {meeting.start} · {durationLabel(durationFromActivity(meeting))}
-                  </p>
-                </button>
-              ))
-            )}
-          </WidgetCard>
+<WidgetCard
+  id="nurture"
+  label="Nurture"
+  count={nurtureDueContacts.length}
+  color="#8fa790"
+  activeWidget={activeWidget}
+  setActiveWidget={setActiveWidget}
+>
+  {nurtureDueContacts.length === 0 ? (
+    <EmptyWidgetRow label="No nurture follow-ups due." />
+  ) : (
+    nurtureDueContacts.slice(0, 6).map((contact) => {
+      const overdue = isNurtureOverdue(contact.next_nurture_date, todayKey)
+
+      return (
+        <button
+          key={contact.id}
+          type="button"
+          className="block w-full border-b border-[rgba(44,44,42,0.06)] px-3 py-2 text-left transition hover:bg-[#f8fdf8] last:border-b-0"
+          onClick={() => navigate(`/contacts/${contact.id}?tab=nurture`)}
+        >
+          <p className="truncate text-[11.5px] font-semibold text-[var(--meeting)]">
+            {contact.name}
+          </p>
+
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <span className="rounded bg-[#f5f3f0] px-1.5 py-0.5 text-[10px] font-medium text-[var(--muted)]">
+              {nurtureFrequencyLabel(contact.nurture_frequency_days)}
+            </span>
+
+            <span
+              className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                overdue
+                  ? 'bg-[#fdf0f0] text-[var(--medical)]'
+                  : 'bg-[#f0f6f0] text-[#5a7a60]'
+              }`}
+            >
+              {shortNurtureDateLabel(contact.next_nurture_date)}
+            </span>
+          </div>
+        </button>
+      )
+    })
+  )}
+</WidgetCard>
 
           <WidgetCard
             id="tasks"
