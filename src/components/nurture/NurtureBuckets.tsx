@@ -70,7 +70,9 @@ export function NurtureBuckets({
             <div
               className={`mb-2 flex items-center justify-between rounded-[9px] px-3 py-2.5 ${meta.head}`}
             >
-              <h2 className={`text-[12px] font-medium ${meta.label}`}>{name}</h2>
+              <h2 className={`font-['Poppins'] text-[12px] font-semibold ${meta.label}`}>
+  {name}
+</h2>
               <span className={`rounded-full px-2 py-0.5 text-[10.5px] font-medium ${meta.count}`}>
                 {items.length}
               </span>
