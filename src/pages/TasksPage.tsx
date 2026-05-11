@@ -520,26 +520,27 @@ export function TasksPage() {
             )}
           </div>
         ) : (
-          <div className="grid gap-3 overflow-x-auto pb-2 md:grid-cols-2 xl:grid-cols-4">
+          <div className="flex gap-3 overflow-x-auto pb-2 max-lg:flex-col lg:items-start">
             {kanbanColumns.map((column) => (
               <section
                 key={column.id}
-                className="min-w-[260px] rounded-xl border-[0.5px] border-[var(--border)] bg-white/70"
+                className="w-full shrink-0 rounded-xl border-[0.5px] border-[var(--border)] bg-white/70 lg:w-[280px]"
               >
-                <header className="flex items-center justify-between border-b-[0.5px] border-[var(--border)] px-3 py-3">
-                  <h2 className="font-serif text-[16px] font-medium text-[var(--text)]">
+                <header className="mb-2 flex items-center justify-between rounded-[9px] bg-[rgba(193,152,173,0.12)] px-3 py-2.5">
+                  <h2 className="font-['Poppins'] text-[12px] font-semibold text-[#9f6e89]">
                     {column.label}
                   </h2>
-                  <span className="rounded-full bg-[rgba(193,152,173,0.16)] px-2 py-1 text-[10.5px] font-medium text-[#9f6e89]">
+          
+                  <span className="rounded-full bg-[rgba(193,152,173,0.18)] px-2 py-0.5 text-[10.5px] font-medium text-[#9f6e89]">
                     {column.tasks.length}
                   </span>
                 </header>
-
-                <div className="grid gap-2 p-2">
+          
+                <div className="space-y-2 px-1 pb-1">
                   {column.tasks.map((task) => renderTaskCard(task))}
-
+          
                   {column.tasks.length === 0 && (
-                    <div className="rounded-[9px] border-[0.5px] border-dashed border-[var(--border)] bg-white p-4 text-center text-[12px] text-[#c8c5c0]">
+                    <div className="rounded-[9px] border-[0.5px] border-dashed border-[var(--border)] bg-white p-3 text-center text-[11.5px] text-[#c8c5c0]">
                       No tasks
                     </div>
                   )}
