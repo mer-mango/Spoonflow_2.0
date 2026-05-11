@@ -71,6 +71,36 @@ const timelineTimeTextClass =
 
 const timelineDurationSelectClass =
   'appearance-none border-0 bg-transparent p-0 pr-0 text-[11px] font-normal text-[var(--muted)] outline-none transition hover:text-[var(--text)] focus:text-[var(--text)]'
+function shortNurtureDateLabel(value?: string | null) {
+  const dateKey = dateKeyFromDateValue(value)
+
+  if (!dateKey) return 'No date'
+
+  return new Date(`${dateKey}T00:00:00`).toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
+function nurtureFrequencyLabel(days?: number | null) {
+  if (!days) return '—'
+
+  const weeks = Math.round(days / 7)
+
+  if (weeks >= 1 && days % 7 === 0) {
+    return `${weeks} wks`
+  }
+
+  return `${days}d`
+}
+
+function isNurtureOverdue(value: string | null | undefined, todayKey: string) {
+  const dateKey = dateKeyFromDateValue(value)
+
+  if (!dateKey) return false
+
+  return dateKey < todayKey
+}
 
 function todayDateKey() {
   const now = new Date()
