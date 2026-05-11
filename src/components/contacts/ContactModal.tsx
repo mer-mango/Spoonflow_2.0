@@ -24,14 +24,16 @@ type Props = {
 
 type Tab = 'information' | 'interactions' | 'notes' | 'tasks' | 'nurture'
 type ContactTaskView = 'active' | 'done'
+type NurtureMethod = 'email' | 'linkedin' | 'meeting' | 'other' | 'skipped'
 
 type NurtureLogEntry = {
   id: string
   contactId: string
   createdAt: string
-  entry: string
-  nextNurtureDate: string | null
-  frequencyDays: number | null
+  method: NurtureMethod
+  notes: string
+  archived: boolean
+  collapsed: boolean
 }
 
 const nurtureOptions = [
@@ -42,6 +44,14 @@ const nurtureOptions = [
   { label: '8 weeks', value: '56' },
   { label: '10 weeks', value: '70' },
   { label: '12 weeks', value: '84' },
+]
+
+const nurtureMethodOptions: Array<{ label: string; value: NurtureMethod }> = [
+  { label: 'Email', value: 'email' },
+  { label: 'LinkedIn', value: 'linkedin' },
+  { label: 'Meeting', value: 'meeting' },
+  { label: 'Other', value: 'other' },
+  { label: 'Skipped', value: 'skipped' },
 ]
 
 function makeInitials(name: string) {
@@ -87,17 +97,75 @@ function addDaysDateInput(days: number) {
   return `${year}-${month}-${day}`
 }
 
-function nurtureLogStorageKey(contactId: string) {
-  return `spoonflow_nurture_logs_${contactId}`
+function dateLabel(value?: string | null) {
+  if (!value) return '—'
+
+  return new Date(value).toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
 }
 
-function formatTimestamp(value: string) {
+function shortDateTimeLabel(value: string) {
   return new Date(value).toLocaleString([], {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
   })
+}
+
+function nurtureLogStorageKey(contactId: string) {
+  return `spoonflow_nurture_logs_${contactId}`
+}
+
+function normalizeNurtureLogs(rawLogs: unknown, contactId: string): NurtureLogEntry[] {
+  if (!Array.isArray(rawLogs)) return []
+
+  return rawLogs
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') return null
+
+      const item = entry as {
+        id?: string
+        contactId?: string
+        createdAt?: string
+        method?: NurtureMethod
+        notes?: string
+        entry?: string
+        archived?: boolean
+        collapsed?: boolean
+      }
+
+      return {
+        id: item.id || crypto.randomUUID(),
+        contactId: item.contactId || contactId,
+        createdAt: item.createdAt || new Date().toISOString(),
+        method: item.method || 'email',
+        notes: item.notes ?? item.entry ?? '',
+        archived: Boolean(item.archived),
+        collapsed: item.collapsed ?? true,
+      }
+    })
+    .filter(Boolean) as NurtureLogEntry[]
+}
+
+function methodLabel(method: NurtureMethod) {
+  return nurtureMethodOptions.find((option) => option.value === method)?.label ?? method
+}
+
+function methodPillClass(method: NurtureMethod) {
+  if (method === 'email') return 'bg-[rgba(184,167,201,0.22)] text-[#8b73a3]'
+  if (method === 'linkedin') return 'bg-[rgba(100,132,161,0.18)] text-[#4f7194]'
+  if (method === 'meeting') return 'bg-[rgba(143,167,144,0.18)] text-[#6f8d70]'
+  if (method === 'skipped') return 'bg-[rgba(201,136,142,0.16)] text-[#b66b73]'
+
+  return 'bg-[#f3f2ef] text-[#8a867f]'
+}
+
+function gmailComposeUrl(email: string) {
+  return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}`
 }
 
 function text(value?: string | null) {
@@ -237,9 +305,10 @@ export function ContactModal({
   const [starred, setStarred] = useState(false)
 
   const [nurtureLogOpen, setNurtureLogOpen] = useState(false)
-  const [nurtureLogEntry, setNurtureLogEntry] = useState('')
-  const [nurtureLogNextDate, setNurtureLogNextDate] = useState('')
+  const [nurtureLogMethod, setNurtureLogMethod] = useState<NurtureMethod>('email')
+  const [nurtureLogNotes, setNurtureLogNotes] = useState('')
   const [nurtureLogs, setNurtureLogs] = useState<NurtureLogEntry[]>([])
+  const [editingNurtureLogId, setEditingNurtureLogId] = useState<string | null>(null)
 
   const contactTasks = useMemo(
     () => tasks.filter((task) => task.contact_id === contact?.id && !task.archived),
@@ -258,6 +327,11 @@ export function ContactModal({
 
   const visibleContactTasks =
     contactTaskView === 'active' ? activeContactTasks : doneContactTasks
+
+  const visibleNurtureLogs = useMemo(
+    () => nurtureLogs.filter((entry) => !entry.archived),
+    [nurtureLogs],
+  )
 
   const displayName = name.trim() || 'New Contact'
   const displayRole = [role, company].filter(Boolean).join(' · ')
@@ -292,18 +366,14 @@ export function ContactModal({
     setStarred(Boolean(contact?.starred))
 
     setNurtureLogOpen(false)
-    setNurtureLogEntry('')
-
-    const nextDefaultDate = contact?.nurture_frequency_days
-      ? addDaysDateInput(contact.nurture_frequency_days)
-      : dateInputValue(contact?.next_nurture_date)
-
-    setNurtureLogNextDate(nextDefaultDate)
+    setNurtureLogMethod('email')
+    setNurtureLogNotes('')
+    setEditingNurtureLogId(null)
 
     if (contact?.id) {
       try {
         const savedLogs = localStorage.getItem(nurtureLogStorageKey(contact.id))
-        setNurtureLogs(savedLogs ? JSON.parse(savedLogs) : [])
+        setNurtureLogs(normalizeNurtureLogs(savedLogs ? JSON.parse(savedLogs) : [], contact.id))
       } catch {
         setNurtureLogs([])
       }
@@ -332,6 +402,13 @@ export function ContactModal({
     initials: makeInitials(displayName),
   })
 
+  const saveNurtureLogCollection = (nextLogs: NurtureLogEntry[]) => {
+    if (!contact?.id) return
+
+    setNurtureLogs(nextLogs)
+    localStorage.setItem(nurtureLogStorageKey(contact.id), JSON.stringify(nextLogs))
+  }
+
   const handleSave = async () => {
     if (!displayName.trim()) {
       setErrorMessage('Contact name is required.')
@@ -352,6 +429,39 @@ export function ContactModal({
       return
     }
 
+    onClose()
+  }
+
+  const handleSaveAndAdvanceNurture = async () => {
+    if (!contact?.id) {
+      setErrorMessage('Save this contact before advancing nurture.')
+      return
+    }
+
+    if (!nurtureFrequencyDays) {
+      setErrorMessage('Choose a nurture frequency before advancing the next nurture date.')
+      return
+    }
+
+    setIsSaving(true)
+    setErrorMessage(null)
+
+    const nextDateInput = addDaysDateInput(Number(nurtureFrequencyDays))
+    const payload = {
+      ...buildPayload(),
+      next_nurture_date: isoFromDateInput(nextDateInput),
+    }
+
+    const result = await onUpdate(contact.id, payload)
+
+    setIsSaving(false)
+
+    if (result.error) {
+      setErrorMessage(result.error.message || 'Something went wrong while saving nurture.')
+      return
+    }
+
+    setNextNurtureDate(nextDateInput)
     onClose()
   }
 
@@ -396,46 +506,74 @@ export function ContactModal({
     void onTasksChanged?.()
   }
 
-  const handleSaveNurtureLog = async () => {
+  const handleSaveNurtureLog = () => {
     if (!contact?.id) {
       setErrorMessage('Save this contact before logging nurture activity.')
       return
     }
 
-    if (!nurtureLogEntry.trim()) {
+    if (!nurtureLogNotes.trim()) {
       setErrorMessage('Add a brief note before saving the nurture log.')
       return
     }
 
-    const frequencyDays = nurtureFrequencyDays ? Number(nurtureFrequencyDays) : null
-    const nextDateIso = isoFromDateInput(nurtureLogNextDate)
+    if (editingNurtureLogId) {
+      const updatedLogs = nurtureLogs.map((entry) =>
+        entry.id === editingNurtureLogId
+          ? {
+              ...entry,
+              method: nurtureLogMethod,
+              notes: nurtureLogNotes.trim(),
+              collapsed: true,
+            }
+          : entry,
+      )
+
+      saveNurtureLogCollection(updatedLogs)
+      setEditingNurtureLogId(null)
+      setNurtureLogMethod('email')
+      setNurtureLogNotes('')
+      setNurtureLogOpen(false)
+      return
+    }
 
     const logEntry: NurtureLogEntry = {
       id: crypto.randomUUID(),
       contactId: contact.id,
       createdAt: new Date().toISOString(),
-      entry: nurtureLogEntry.trim(),
-      nextNurtureDate: nextDateIso,
-      frequencyDays,
+      method: nurtureLogMethod,
+      notes: nurtureLogNotes.trim(),
+      archived: false,
+      collapsed: true,
     }
 
-    const updatedLogs = [logEntry, ...nurtureLogs]
-
-    setNurtureLogs(updatedLogs)
-    localStorage.setItem(nurtureLogStorageKey(contact.id), JSON.stringify(updatedLogs))
-
-    setNextNurtureDate(nurtureLogNextDate)
-    setNurtureLogEntry('')
+    saveNurtureLogCollection([logEntry, ...nurtureLogs])
+    setNurtureLogMethod('email')
+    setNurtureLogNotes('')
     setNurtureLogOpen(false)
+  }
 
-    const { error } = await onUpdate(contact.id, {
-      nurture_frequency_days: frequencyDays,
-      next_nurture_date: nextDateIso,
-    })
+  const handleEditNurtureLog = (entry: NurtureLogEntry) => {
+    setEditingNurtureLogId(entry.id)
+    setNurtureLogMethod(entry.method)
+    setNurtureLogNotes(entry.notes)
+    setNurtureLogOpen(true)
+  }
 
-    if (error) {
-      setErrorMessage(error.message || 'Nurture log saved, but next nurture date did not update.')
-    }
+  const handleArchiveNurtureLog = (id: string) => {
+    const updatedLogs = nurtureLogs.map((entry) =>
+      entry.id === id ? { ...entry, archived: true } : entry,
+    )
+
+    saveNurtureLogCollection(updatedLogs)
+  }
+
+  const handleToggleNurtureLog = (id: string) => {
+    const updatedLogs = nurtureLogs.map((entry) =>
+      entry.id === id ? { ...entry, collapsed: !entry.collapsed } : entry,
+    )
+
+    saveNurtureLogCollection(updatedLogs)
   }
 
   const tabs: Array<{ id: Tab; label: string; count?: number }> = [
@@ -537,9 +675,24 @@ export function ContactModal({
                   <SectionHeader>Overview</SectionHeader>
 
                   <div className="grid gap-3 rounded-xl border border-[var(--border)] bg-white p-4 md:grid-cols-2">
-                    <Input label="Full name" value={name} onChange={setName} placeholder="Jane Smith" />
-                    <Input label="Role / Title" value={role} onChange={setRole} placeholder="Director of..." />
-                    <Input label="Company" value={company} onChange={setCompany} placeholder="Company" />
+                    <Input
+                      label="Full name"
+                      value={name}
+                      onChange={setName}
+                      placeholder="Jane Smith"
+                    />
+                    <Input
+                      label="Role / Title"
+                      value={role}
+                      onChange={setRole}
+                      placeholder="Director of..."
+                    />
+                    <Input
+                      label="Company"
+                      value={company}
+                      onChange={setCompany}
+                      placeholder="Company"
+                    />
                     <Input
                       label="From / how you know them"
                       value={fromNote}
@@ -564,10 +717,31 @@ export function ContactModal({
                   <SectionHeader>Contact info</SectionHeader>
 
                   <div className="grid gap-3 rounded-xl border border-[var(--border)] bg-white p-4 md:grid-cols-2">
-                    <Input label="Email" value={email} onChange={setEmail} placeholder="jane@example.com" type="email" />
-                    <Input label="LinkedIn URL" value={linkedinUrl} onChange={setLinkedinUrl} placeholder="https://linkedin.com/in/..." />
-                    <Input label="Website" value={website} onChange={setWebsite} placeholder="https://..." />
-                    <Input label="Scheduling link" value={schedulingLink} onChange={setSchedulingLink} placeholder="https://calendly.com/..." />
+                    <Input
+                      label="Email"
+                      value={email}
+                      onChange={setEmail}
+                      placeholder="jane@example.com"
+                      type="email"
+                    />
+                    <Input
+                      label="LinkedIn URL"
+                      value={linkedinUrl}
+                      onChange={setLinkedinUrl}
+                      placeholder="https://linkedin.com/in/..."
+                    />
+                    <Input
+                      label="Website"
+                      value={website}
+                      onChange={setWebsite}
+                      placeholder="https://..."
+                    />
+                    <Input
+                      label="Scheduling link"
+                      value={schedulingLink}
+                      onChange={setSchedulingLink}
+                      placeholder="https://calendly.com/..."
+                    />
                   </div>
                 </section>
 
@@ -576,7 +750,12 @@ export function ContactModal({
 
                   <div className="grid gap-3 rounded-xl border border-[var(--border)] bg-white p-4 md:grid-cols-2">
                     <Input label="City" value={city} onChange={setCity} placeholder="City" />
-                    <Input label="State" value={stateValue} onChange={setStateValue} placeholder="State" />
+                    <Input
+                      label="State"
+                      value={stateValue}
+                      onChange={setStateValue}
+                      placeholder="State"
+                    />
                   </div>
                 </section>
               </div>
@@ -730,11 +909,41 @@ export function ContactModal({
             {activeTab === 'nurture' && (
               <div className="space-y-5">
                 <section className="rounded-xl border border-[var(--border)] bg-white p-4">
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    {email ? (
+                      <a
+                        href={gmailComposeUrl(email)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-full bg-[rgba(143,167,144,0.14)] px-3 py-1.5 font-medium text-[#6f8d70] hover:bg-[rgba(143,167,144,0.22)]"
+                      >
+                        Email: {email}
+                      </a>
+                    ) : (
+                      <span className="rounded-full bg-[#f5f3f0] px-3 py-1.5 text-[var(--muted)]">
+                        No email
+                      </span>
+                    )}
+
+                    {linkedinUrl && (
+                      <a
+                        href={linkedinUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-full bg-[#f5f3f0] px-3 py-1.5 font-medium text-[var(--meeting)] hover:bg-[#ebe8e4]"
+                      >
+                        LinkedIn profile
+                      </a>
+                    )}
+                  </div>
+                </section>
+
+                <section className="rounded-xl border border-[var(--border)] bg-white p-4">
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
                       <p className="font-serif text-xl">Nurture schedule</p>
                       <p className="mt-1 text-sm text-[var(--muted)]">
-                        Set how often this contact should resurface for follow-up.
+                        Choose the cadence and confirm the next follow-up date.
                       </p>
                     </div>
 
@@ -748,7 +957,9 @@ export function ContactModal({
                             setNurtureFrequencyDays(value)
 
                             if (value) {
-                              setNurtureLogNextDate(addDaysDateInput(Number(value)))
+                              setNextNurtureDate(addDaysDateInput(Number(value)))
+                            } else {
+                              setNextNurtureDate('')
                             }
                           }}
                           className="w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--nurture)]"
@@ -772,11 +983,24 @@ export function ContactModal({
                 </section>
 
                 <section className="rounded-xl border border-[var(--border)] bg-white p-4">
+                  <p className="font-serif text-xl">Context</p>
+                  <p className="mt-2 text-sm text-[var(--muted)]">
+                    <span className="font-medium text-[var(--text)]">Date of last meeting:</span>{' '}
+                    {dateLabel(contact?.next_call_date)}
+                  </p>
+                  <p className="mt-2 rounded-xl bg-[#faf9f8] p-3 text-sm leading-6 text-[var(--muted)]">
+                    {notes ||
+                      about ||
+                      'AI-generated context from the last interaction will appear here once connected.'}
+                  </p>
+                </section>
+
+                <section className="rounded-xl border border-[var(--border)] bg-white p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="font-serif text-xl">Nurture log</p>
                       <p className="mt-1 text-sm text-[var(--muted)]">
-                        Record each relationship touch and confirm when the next follow-up should happen.
+                        Record the touch, message, or reason for skipping.
                       </p>
                     </div>
 
@@ -789,11 +1013,9 @@ export function ContactModal({
                           return
                         }
 
-                        const nextDate = nurtureFrequencyDays
-                          ? addDaysDateInput(Number(nurtureFrequencyDays))
-                          : nextNurtureDate
-
-                        setNurtureLogNextDate(nextDate)
+                        setEditingNurtureLogId(null)
+                        setNurtureLogMethod('email')
+                        setNurtureLogNotes('')
                         setNurtureLogOpen((value) => !value)
                       }}
                       className="rounded-lg bg-[rgba(143,167,144,0.18)] px-3 py-2 text-xs font-semibold text-[#6f8d70] disabled:cursor-not-allowed disabled:opacity-50"
@@ -803,70 +1025,108 @@ export function ContactModal({
                   </div>
 
                   {nurtureLogOpen && (
-                    <div className="mt-4 rounded-xl border border-[rgba(143,167,144,0.28)] bg-[rgba(143,167,144,0.06)] p-4">
-                      <Textarea
-                        label="What happened?"
-                        value={nurtureLogEntry}
-                        onChange={setNurtureLogEntry}
-                        placeholder="Example: Emailed her about the panel opportunity. Plan to follow up in 8 weeks."
-                        rows={5}
+                    <div className="mt-4 rounded-xl border border-[rgba(143,167,144,0.28)] bg-[rgba(143,167,144,0.06)] p-3">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-xs font-semibold text-[var(--nurture)]">
+                          {shortDateTimeLabel(new Date().toISOString())}
+                        </span>
+
+                        <select
+                          value={nurtureLogMethod}
+                          onChange={(event) =>
+                            setNurtureLogMethod(event.target.value as NurtureMethod)
+                          }
+                          className="ml-auto rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-xs outline-none focus:border-[var(--nurture)]"
+                        >
+                          {nurtureMethodOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <textarea
+                        value={nurtureLogNotes}
+                        onChange={(event) => setNurtureLogNotes(event.target.value)}
+                        placeholder="Write the message you sent, notes from the touch, or why you skipped it..."
+                        rows={4}
+                        className="mt-3 w-full resize-y rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-[var(--nurture)]"
                       />
 
-                      <div className="mt-3 grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
-                        <Input
-                          label="Schedule next nurture"
-                          value={nurtureLogNextDate}
-                          onChange={setNurtureLogNextDate}
-                          type="date"
-                        />
-
+                      <div className="mt-3 flex justify-end">
                         <button
                           type="button"
-                          onClick={() => void handleSaveNurtureLog()}
+                          onClick={handleSaveNurtureLog}
                           className="rounded-lg bg-[var(--nurture)] px-4 py-2 text-sm font-semibold text-white"
                         >
-                          Save Log & Schedule Next Nurture
+                          {editingNurtureLogId ? 'Update Log' : 'Save Log'}
                         </button>
                       </div>
                     </div>
                   )}
 
-                  {nurtureLogs.length === 0 ? (
-                    <div className="mt-4 rounded-xl border border-dashed border-[rgba(143,167,144,0.35)] bg-[rgba(143,167,144,0.06)] p-5 text-sm text-[#6f8d70]">
-                      No nurture touches logged yet.
-                    </div>
-                  ) : (
-                    <div className="mt-4 space-y-2">
-                      {nurtureLogs.map((entry) => (
+                  <div className="mt-4 space-y-2">
+                    {visibleNurtureLogs.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-[rgba(143,167,144,0.35)] bg-[rgba(143,167,144,0.06)] p-5 text-sm text-[#6f8d70]">
+                        No nurture touches logged yet.
+                      </div>
+                    ) : (
+                      visibleNurtureLogs.map((entry) => (
                         <article
                           key={entry.id}
                           className="rounded-xl border border-[var(--border)] bg-[#faf9f8] p-3"
                         >
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-xs font-semibold text-[var(--nurture)]">
-                              {formatTimestamp(entry.createdAt)}
-                            </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleNurtureLog(entry.id)}
+                              className="text-xs text-[var(--muted)]"
+                              aria-label={
+                                entry.collapsed ? 'Expand log notes' : 'Collapse log notes'
+                              }
+                            >
+                              {entry.collapsed ? '▸' : '▾'}
+                            </button>
 
-                            {entry.nextNurtureDate && (
-                              <span className="rounded-full bg-white px-2 py-1 text-[10.5px] font-medium text-[var(--muted)]">
-                                Next: {dateInputValue(entry.nextNurtureDate)}
-                              </span>
-                            )}
+                            <span className="text-xs font-semibold text-[var(--nurture)]">
+                              {shortDateTimeLabel(entry.createdAt)}
+                            </span>
+
+                            <span
+                              className={`rounded-full px-2 py-1 text-[10.5px] font-medium ${methodPillClass(
+                                entry.method,
+                              )}`}
+                            >
+                              {methodLabel(entry.method)}
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() => handleEditNurtureLog(entry)}
+                              className="ml-auto text-[10.5px] font-medium text-[var(--meeting)]"
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleArchiveNurtureLog(entry.id)}
+                              className="text-[10.5px] font-medium text-[var(--muted)]"
+                            >
+                              Archive
+                            </button>
                           </div>
 
-                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--text)]">
-                            {entry.entry}
-                          </p>
-
-                          {entry.frequencyDays && (
-                            <p className="mt-2 text-[11px] text-[var(--muted)]">
-                              Follow-up cadence at time of log: every {entry.frequencyDays} days
+                          {!entry.collapsed && (
+                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--text)]">
+                              {entry.notes}
                             </p>
                           )}
                         </article>
-                      ))}
-                    </div>
-                  )}
+                      ))
+                    )}
+                  </div>
                 </section>
               </div>
             )}
@@ -880,7 +1140,7 @@ export function ContactModal({
               Archive contact
             </button>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={onClose}
@@ -888,6 +1148,17 @@ export function ContactModal({
               >
                 Cancel
               </button>
+
+              {activeTab === 'nurture' && (
+                <button
+                  type="button"
+                  onClick={() => void handleSaveAndAdvanceNurture()}
+                  disabled={isSaving || !nurtureFrequencyDays}
+                  className="rounded-lg border border-[var(--border)] bg-white px-5 py-2 text-sm font-semibold text-[var(--text)] transition hover:bg-black/[0.03] disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  Save & Advance Next Nurture
+                </button>
+              )}
 
               <button
                 type="button"
