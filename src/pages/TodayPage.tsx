@@ -1114,8 +1114,8 @@ useEffect(() => {
   }, [meetingActivities, manualActivities])
 
   return (
-    <section className="mx-auto max-w-5xl overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)]">
-      <header className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5">
+    <section className="overflow-hidden rounded-xl border-[0.5px] border-[var(--border)] bg-white">      
+    <header className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5">
         <div>
           <h1 className="font-serif text-[26px] font-medium tracking-[-0.4px]">Today</h1>
           <p className="mt-1 text-[18px] text-[var(--muted)]">{todayLongLabel()}</p>
@@ -1130,7 +1130,7 @@ useEffect(() => {
         </button>
       </header>
 
-      <div className="space-y-3 p-5">
+      <div className="space-y-3 bg-[var(--bg)] p-5">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
 
           <WidgetCard
