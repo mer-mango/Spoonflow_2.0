@@ -46,6 +46,11 @@ export function CalendarPage() {
     [events, selectedDateKey],
   )
 
+  const monthLabel = currentMonth.toLocaleDateString([], {
+  month: 'long',
+  year: 'numeric',
+})
+
   return (
   <section className="overflow-hidden rounded-xl border-[0.5px] border-[var(--border)] bg-white">
     <header className="border-b-[0.5px] border-[var(--border)] bg-white">
@@ -149,3 +154,4 @@ export function CalendarPage() {
     </div>
   </section>
 )
+}
