@@ -12,7 +12,8 @@ export function GoalsPage() {
   return (
     <section className="overflow-hidden rounded-xl border-[0.5px] border-[var(--border)] bg-[var(--bg)]">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b-[0.5px] border-[var(--border)] bg-white px-5 py-4">
-        <div><h1 className="font-serif text-[22px] font-medium tracking-[-0.4px]">Goals</h1><p className="mt-0.5 text-[11px] text-[var(--muted)]">A horizontal bulletin board for strategic goals and progress notes.</p></div>
+        <div><h1 className="font-serif text-[26px] font-medium tracking-[-0.4px]">Goals</h1>
+        </div>
         <button type="button" className="rounded-full bg-[var(--goals)] px-4 py-2 text-[11.5px] font-medium text-white" onClick={() => setOpenNewGoal(true)}>+ New Goal</button>
       </header>
       <div className="flex flex-wrap items-center gap-2 border-b-[0.5px] border-[var(--border)] bg-[var(--bg)] px-5 py-3">
