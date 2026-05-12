@@ -55,7 +55,9 @@ export function CalendarPage() {
   <section className="overflow-hidden rounded-xl border-[0.5px] border-[var(--border)] bg-white">
     <header className="border-b-[0.5px] border-[var(--border)] bg-white">
       <div className="border-b-[0.5px] border-[var(--border)] px-5 py-5">
-        <h1 className="text-2xl">Calendar</h1>
+        <h1 className="font-serif text-[26px] font-medium tracking-[-0.4px]">
+          Calendar
+        </h1>
         <p className="mt-1 text-sm text-[var(--muted)]">
           Google Calendar, meetings, medical appointments, and working blocks.
         </p>
