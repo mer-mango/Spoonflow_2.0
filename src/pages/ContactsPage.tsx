@@ -206,7 +206,9 @@ export function ContactsPage() {
       <header className="rounded-2xl border border-[var(--border)] bg-white">
         <div className="flex flex-col gap-3 border-b border-[var(--border)] px-5 py-5 md:flex-row md:items-end md:justify-between">
           <div>
-            <h1 className="text-2xl">Contacts</h1>
+            <h1 className="font-serif text-[26px] font-medium tracking-[-0.4px]">
+              Contacts
+            </h1>
             <p className="mt-1 text-sm text-[var(--muted)]">
               {contacts.length} contact{contacts.length === 1 ? '' : 's'} · {filtered.length} shown
             </p>
