@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Modal } from '../shared/Modal'
 import type { Task } from '../../hooks/useTasks'
 
-type WizardStep = 'overview' | 'todos' | 'meetings' | 'priorities' | 'start'
+type WizardStep = 'overview' | 'todos' | 'meetings' | 'start'
 
 type WizardMeeting = {
   id: string
@@ -40,7 +40,6 @@ const steps: Array<{ id: WizardStep; label: string }> = [
   { id: 'overview', label: 'Overview' },
   { id: 'todos', label: 'To-Dos' },
   { id: 'meetings', label: 'Meetings' },
-  { id: 'priorities', label: 'Priorities' },
   { id: 'start', label: 'Start' },
 ]
 
@@ -311,6 +310,7 @@ export function PlanMyDayWizard({
 
   const overdueTasks = dueTasks.filter((task) => isOverdueDate(task.due_date, todayKey))
   const todayTasks = dueTasks.filter((task) => isTodayDate(task.due_date, todayKey))
+  const contentDueCount = 0
 
   const canGoBack = steps.findIndex((item) => item.id === step) > 0
   const canGoForward = steps.findIndex((item) => item.id === step) < steps.length - 1
@@ -348,6 +348,7 @@ export function PlanMyDayWizard({
         </header>
 
         <div className="max-h-[68vh] overflow-y-auto p-5">
+        
           {step === 'overview' && (
             <div className="space-y-5">
               <div>
@@ -356,23 +357,13 @@ export function PlanMyDayWizard({
                   A quick look at what is already asking for your attention today.
                 </p>
               </div>
-
+          
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <SummaryCard label="Meetings" value={meetings.length} color="#6484a1" />
-                <SummaryCard label="Due tasks" value={todayTasks.length} color="#c198ad" />
-                <SummaryCard label="Overdue" value={overdueTasks.length} color="#c9888e" />
+                <SummaryCard label="Tasks" value={dueTasks.length} color="#c198ad" />
+                <SummaryCard label="Content" value={contentDueCount} color="#e2b7be" />
                 <SummaryCard label="Nurtures" value={nurtureContacts.length} color="#8fa790" />
               </div>
-
-              <section className="rounded-xl border border-[var(--border)] bg-white p-4">
-                <p className="font-serif text-xl">What this wizard helps with</p>
-                <div className="mt-3 grid gap-2 text-sm text-[var(--muted)]">
-                  <p>• Review what is due or overdue.</p>
-                  <p>• Update task status, dates, and priorities.</p>
-                  <p>• Check what meetings need prep.</p>
-                  <p>• Leave with a clear priority list before manually building your timeline.</p>
-                </div>
-              </section>
             </div>
           )}
 
@@ -485,101 +476,32 @@ export function PlanMyDayWizard({
             </div>
           )}
 
-          {step === 'priorities' && (
-            <div className="space-y-5">
-              <div>
-                <h3 className="font-serif text-2xl text-[var(--text)]">Priority review</h3>
-                <p className="mt-1 text-sm text-[var(--muted)]">
-                  A quick view of what you marked as important before you build your timeline manually.
-                </p>
-              </div>
-
-              <section className="rounded-xl border border-[var(--border)] bg-white p-4">
-                <p className="font-serif text-xl">Priority tasks</p>
-
-                <div className="mt-3 space-y-2">
-                  {priorityTasks.length === 0 ? (
-                    <p className="rounded-xl border border-dashed border-[var(--border)] bg-[#faf9f8] p-4 text-sm text-[var(--muted)]">
-                      No priority tasks marked yet.
-                    </p>
-                  ) : (
-                    priorityTasks.map((task) => (
-                      <button
-                        key={task.id}
-                        type="button"
-                        onClick={() => onOpenTask(task)}
-                        className="flex w-full items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[#faf9f8] px-3 py-2 text-left transition hover:bg-white"
-                      >
-                        <span className="truncate text-sm font-semibold text-[var(--text)]">
-                          {task.title}
-                        </span>
-                        <span className="rounded-full bg-[#fff5c9] px-2 py-1 text-[10.5px] font-medium text-[#9d7f22]">
-                          Priority
-                        </span>
-                      </button>
-                    ))
-                  )}
-                </div>
-              </section>
-
-              <section className="rounded-xl border border-[var(--border)] bg-white p-4">
-                <p className="font-serif text-xl">Still due today</p>
-                <p className="mt-1 text-sm text-[var(--muted)]">
-                  These may be worth considering when you add timeline blocks.
-                </p>
-
-                <div className="mt-3 space-y-2">
-                  {dueTasks.length === 0 ? (
-                    <p className="rounded-xl border border-dashed border-[var(--border)] bg-[#faf9f8] p-4 text-sm text-[var(--muted)]">
-                      Nothing still due today.
-                    </p>
-                  ) : (
-                    dueTasks.map((task) => (
-                      <button
-                        key={task.id}
-                        type="button"
-                        onClick={() => onOpenTask(task)}
-                        className="flex w-full items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[#faf9f8] px-3 py-2 text-left transition hover:bg-white"
-                      >
-                        <span className="truncate text-sm font-semibold text-[var(--text)]">
-                          {task.title}
-                        </span>
-                        <span className="text-xs text-[var(--muted)]">
-                          {formatDateLabel(task.due_date)}
-                        </span>
-                      </button>
-                    ))
-                  )}
-                </div>
-              </section>
-            </div>
-          )}
-
           {step === 'start' && (
             <div className="space-y-5">
               <div>
-                <h3 className="font-serif text-2xl text-[var(--text)]">You’re ready to shape the day</h3>
-                <p className="mt-1 text-sm text-[var(--muted)]">
-                  You’ve reviewed what’s due, checked meetings, and identified priorities. Next, close this wizard and add timeline blocks manually.
-                </p>
+                <h3 className="font-serif text-2xl text-[var(--text)]">
+                  You’re ready to shape the day
+                </h3>
+               <p className="mt-1 text-sm text-[var(--muted)]">
+                You’ve reviewed your to-dos and meetings. Now head back to Today and manually shape your timeline.
+              </p>
               </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <SummaryCard label="Priority tasks" value={priorityTasks.length} color="#d2a72e" />
+          
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <SummaryCard label="Meetings" value={meetings.length} color="#6484a1" />
-                <SummaryCard label="Nurtures due" value={nurtureContacts.length} color="#8fa790" />
+                <SummaryCard label="Tasks" value={dueTasks.length} color="#c198ad" />
+                <SummaryCard label="Content" value={contentDueCount} color="#e2b7be" />
+                <SummaryCard label="Nurtures" value={nurtureContacts.length} color="#8fa790" />
               </div>
-
+          
               <section className="rounded-xl border border-[var(--border)] bg-white p-4">
                 <p className="font-serif text-xl">Next step</p>
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                  Use the Today timeline to add blocks like Tasks, Content, Nurture, Email, Break, PT, or Wind Down. This keeps the wizard focused on triage instead of forcing a full schedule.
+                  Use the Today timeline to add blocks like Tasks, Content, Nurture, Email, Break, PT, or Wind Down.
                 </p>
               </section>
             </div>
           )}
-        </div>
-
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] bg-white px-5 py-4">
           <button
             type="button"
