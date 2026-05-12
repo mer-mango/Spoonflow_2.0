@@ -1195,12 +1195,24 @@ useEffect(() => {
           </WidgetCard>
 
           <WidgetCard
-                  id="nurture"
-                  label="Nurture"
-                  count={nurtureDueContacts.length}
-                  color="#8fa790"
-                  activeWidget={activeWidget}
-                  setActiveWidget={setActiveWidget}
+            id="content"
+            label="Content"
+            count={timelineActivities.filter((item) => item.type === 'content').length}
+            color="#e2b7be"
+            activeWidget={activeWidget}
+            setActiveWidget={setActiveWidget}
+          >
+            <EmptyWidgetRow label="Content due soon will show here once wired." />
+          </WidgetCard>
+        </div>
+
+          <WidgetCard
+            id="nurture"
+            label="Nurture"
+            count={nurtureDueContacts.length}
+            color="#8fa790"
+            activeWidget={activeWidget}
+            setActiveWidget={setActiveWidget}
                 >
                   {nurtureDueContacts.length === 0 ? (
                     <EmptyWidgetRow label="No nurture follow-ups due." />
@@ -1239,18 +1251,6 @@ useEffect(() => {
                     })
                   )}
                 </WidgetCard>
-
-          <WidgetCard
-            id="content"
-            label="Content"
-            count={timelineActivities.filter((item) => item.type === 'content').length}
-            color="#e2b7be"
-            activeWidget={activeWidget}
-            setActiveWidget={setActiveWidget}
-          >
-            <EmptyWidgetRow label="Content due soon will show here once wired." />
-          </WidgetCard>
-        </div>
 
         <TodayTimeline
           activities={timelineActivities}
