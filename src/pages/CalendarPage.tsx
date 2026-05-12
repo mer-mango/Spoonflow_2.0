@@ -47,9 +47,9 @@ export function CalendarPage() {
   )
 
   return (
-    <section className="mx-auto max-w-6xl space-y-4">
-      <header className="rounded-2xl border border-[var(--border)] bg-white">
-        <div className="border-b border-[var(--border)] px-5 py-5">
+  <section className="overflow-hidden rounded-xl border-[0.5px] border-[var(--border)] bg-white">
+    <header className="border-b-[0.5px] border-[var(--border)] bg-white">
+        <div className="border-b-[0.5px] border-[var(--border)] px-5 py-5">
           <h1 className="text-2xl">Calendar</h1>
           <p className="mt-1 text-sm text-[var(--muted)]">
             Google Calendar, meetings, medical appointments, and working blocks.
@@ -129,26 +129,25 @@ export function CalendarPage() {
         </div>
       </header>
 
-      {isLoading ? (
-        <div className="rounded-2xl border border-[var(--border)] bg-white p-5 text-sm text-[var(--muted)]">
-          Loading calendar...
-        </div>
-      ) : view === 'list' ? (
-        <ListView events={events} />
-      ) : (
-        <div className="flex flex-col gap-4 lg:flex-row">
-          <div className="flex-1 rounded-2xl border border-[var(--border)] bg-white p-4">
-            <MonthGrid
-              currentMonth={currentMonth}
-              events={events}
-              selectedDateKey={selectedDateKey}
-              onSelectDate={setSelectedDateKey}
-            />
-          </div>
+<div className="bg-[var(--bg)] p-4">
+  {isLoading ? (
+    <div className="rounded-xl border-[0.5px] border-[var(--border)] bg-white p-5 text-sm text-[var(--muted)]">
+      Loading calendar...
+    </div>
+  ) : view === 'list' ? (
+    <ListView events={events} />
+  ) : (
+    <div className="flex flex-col gap-4 lg:flex-row">
+      <div className="flex-1 rounded-xl border-[0.5px] border-[var(--border)] bg-white p-4">
+        <MonthGrid
+          currentMonth={currentMonth}
+          events={events}
+          selectedDateKey={selectedDateKey}
+          onSelectDate={setSelectedDateKey}
+        />
+      </div>
 
-          <DayPanel dateKey={selectedDateKey} events={selectedDayEvents} />
-        </div>
-      )}
-    </section>
-  )
-}
+      <DayPanel dateKey={selectedDateKey} events={selectedDayEvents} />
+    </div>
+  )}
+</div>
