@@ -1204,7 +1204,6 @@ useEffect(() => {
           >
             <EmptyWidgetRow label="Content due soon will show here once wired." />
           </WidgetCard>
-        </div>
 
           <WidgetCard
             id="nurture"
@@ -1251,6 +1250,8 @@ useEffect(() => {
                     })
                   )}
                 </WidgetCard>
+          
+        </div>
 
         <TodayTimeline
           activities={timelineActivities}
