@@ -393,12 +393,10 @@ export function TasksPage() {
     <section className="overflow-hidden rounded-xl border-[0.5px] border-[var(--border)] bg-[var(--bg)]">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b-[0.5px] border-[var(--border)] bg-white px-5 py-4">
         <div>
-          <h1 className="font-serif text-[22px] font-medium tracking-[-0.4px]">
+          <h1 className="font-serif text-[26px] font-medium tracking-[-0.4px]">
             Tasks
           </h1>
-          <p className="mt-0.5 text-[11px] text-[var(--muted)]">
-            {openTasks.length} active task{openTasks.length === 1 ? '' : 's'}
-          </p>
+          
         </div>
 
         <button
