@@ -9,7 +9,7 @@ import { useTasks, type Task, type TaskStatus } from '../hooks/useTasks'
 type ViewMode = 'list' | 'kanban'
 
 type FilterMode =
-  | 'open'
+  | 'active'
   | 'all'
   | 'done'
   | 'overdue'
@@ -162,7 +162,6 @@ export function TasksPage() {
 
   const {
     tasks,
-    openTasks,
     isLoading,
     updateTask,
     archiveTask,
