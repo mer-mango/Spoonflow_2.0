@@ -533,16 +533,6 @@ export function PlanMyDayWizard({
                 <SummaryCard label="Nurtures" value={nurtureContacts.length} color="#8fa790" />
               </div>
 
-              <section className="rounded-xl border border-[var(--border)] bg-white p-4">
-                <p className="font-serif text-xl">Next step</p>
-                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                  Use the Today timeline to add blocks like Tasks, Content, Nurture, Email, Break, PT, or Wind Down.
-                </p>
-              </section>
-            </div>
-          )}
-        </div>
-
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] bg-white px-5 py-4">
           <button
             type="button"
