@@ -1307,6 +1307,10 @@ export function ContactModal({
             </div>
           </div>
         </div>
+       return (
+    <>
+      <Modal>
+        ...
       </Modal>
 
       <TaskModal
@@ -1315,70 +1319,71 @@ export function ContactModal({
         onClose={() => setSelectedTask(null)}
         onSave={handleContactTaskSave}
       />
+
+      <MeetingInteractionModal
+        open={Boolean(selectedInteraction)}
+        interaction={selectedInteraction}
+        contactName={displayName}
+        actionItems={
+          selectedInteraction
+            ? actionItemsForInteraction(selectedInteraction.id)
+            : []
+        }
+        onClose={() => setSelectedInteraction(null)}
+        onSave={async (interactionId, patch) => {
+          const result = await updateInteraction(interactionId, patch)
+
+          if (result.error) {
+            setErrorMessage(result.error.message || 'Meeting could not be saved.')
+            return result
+          }
+
+          if (result.data) {
+            setSelectedInteraction(result.data as ContactInteraction)
+          }
+
+          return result
+        }}
+        onArchive={async (interactionId) => {
+          const result = await archiveInteraction(interactionId)
+
+          if (result.error) {
+            setErrorMessage(result.error.message || 'Meeting could not be archived.')
+          }
+
+          return result
+        }}
+        onCreateActionItem={async (interactionId, text) => {
+          const result = await createActionItem({
+            interaction_id: interactionId,
+            text,
+          })
+
+          if (result.error) {
+            setErrorMessage(result.error.message || 'Action item could not be added.')
+          }
+
+          return result
+        }}
+        onUpdateActionItem={async (actionItemId, patch) => {
+          const result = await updateActionItem(actionItemId, patch)
+
+          if (result.error) {
+            setErrorMessage(result.error.message || 'Action item could not be updated.')
+          }
+
+          return result
+        }}
+        onArchiveActionItem={async (actionItemId) => {
+          const result = await archiveActionItem(actionItemId)
+
+          if (result.error) {
+            setErrorMessage(result.error.message || 'Action item could not be archived.')
+          }
+
+          return result
+        }}
+      />
     </>
   )
 }
-<MeetingInteractionModal
-  open={Boolean(selectedInteraction)}
-  interaction={selectedInteraction}
-  contactName={displayName}
-  actionItems={
-    selectedInteraction
-      ? actionItemsForInteraction(selectedInteraction.id)
-      : []
-  }
-  onClose={() => setSelectedInteraction(null)}
-  onSave={async (interactionId, patch) => {
-    const result = await updateInteraction(interactionId, patch)
-
-    if (result.error) {
-      setErrorMessage(result.error.message || 'Meeting could not be saved.')
-      return result
-    }
-
-    if (result.data) {
-      setSelectedInteraction(result.data as ContactInteraction)
-    }
-
-    return result
-  }}
-  onArchive={async (interactionId) => {
-    const result = await archiveInteraction(interactionId)
-
-    if (result.error) {
-      setErrorMessage(result.error.message || 'Meeting could not be archived.')
-    }
-
-    return result
-  }}
-  onCreateActionItem={async (interactionId, text) => {
-    const result = await createActionItem({
-      interaction_id: interactionId,
-      text,
-    })
-
-    if (result.error) {
-      setErrorMessage(result.error.message || 'Action item could not be added.')
-    }
-
-    return result
-  }}
-  onUpdateActionItem={async (actionItemId, patch) => {
-    const result = await updateActionItem(actionItemId, patch)
-
-    if (result.error) {
-      setErrorMessage(result.error.message || 'Action item could not be updated.')
-    }
-
-    return result
-  }}
-  onArchiveActionItem={async (actionItemId) => {
-    const result = await archiveActionItem(actionItemId)
-
-    if (result.error) {
-      setErrorMessage(result.error.message || 'Action item could not be archived.')
-    }
-
-    return result
-  }}
-/>
