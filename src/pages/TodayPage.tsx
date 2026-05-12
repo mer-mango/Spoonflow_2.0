@@ -1,3 +1,4 @@
+import { PlanMyDayWizard } from '../components/today/PlanMyDayWizard'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { TaskModal } from '../components/shared/TaskModal'
@@ -941,12 +942,12 @@ function TodayTimeline({
 export function TodayPage() {
   const navigate = useNavigate()
   const { enrichedCalendarEvents } = useGoogleCalendar()
-  const { tasks, updateTask } = useTasks()
-  const { contacts } = useContacts()
+  const { tasks, updateTask, archiveTask } = useTasks()  const { contacts } = useContacts()
   const [openAdd, setOpenAdd] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [activeWidget, setActiveWidget] = useState<WidgetId | null>(null)
   const [activityStartTime, setActivityStartTime] = useState('09:00')
+  const [openPlanMyDay, setOpenPlanMyDay] = useState(false)
   const [nowMinutes, setNowMinutes] = useState(() => {
     const now = new Date()
     return now.getHours() * 60 + now.getMinutes()
@@ -1117,6 +1118,15 @@ useEffect(() => {
           <p className="mt-1 text-[11px] text-[var(--muted)]">{todayLongLabel()}</p>
         </div>
 
+        <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className="rounded-full bg-[var(--jamie)] px-4 py-2 text-[11.5px] font-medium text-white shadow-sm transition hover:opacity-90"
+          onClick={() => setOpenPlanMyDay(true)}
+        >
+          Plan My Day
+        </button>
+      
         <button
           type="button"
           className="rounded-full bg-[var(--tasks)] px-4 py-2 text-[11.5px] font-medium text-white shadow-sm transition hover:opacity-90"
@@ -1124,56 +1134,47 @@ useEffect(() => {
         >
           + New Timeline Activity
         </button>
+      </div>
       </header>
 
       <div className="space-y-3 p-5">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-<WidgetCard
-  id="nurture"
-  label="Nurture"
-  count={nurtureDueContacts.length}
-  color="#8fa790"
-  activeWidget={activeWidget}
-  setActiveWidget={setActiveWidget}
->
-  {nurtureDueContacts.length === 0 ? (
-    <EmptyWidgetRow label="No nurture follow-ups due." />
-  ) : (
-    nurtureDueContacts.slice(0, 6).map((contact) => {
-      const overdue = isNurtureOverdue(contact.next_nurture_date, todayKey)
 
-      return (
-        <button
-          key={contact.id}
-          type="button"
-          className="block w-full border-b border-[rgba(44,44,42,0.06)] px-3 py-2 text-left transition hover:bg-[#f8fdf8] last:border-b-0"
-          onClick={() => navigate(`/contacts/${contact.id}?tab=nurture`)}
-        >
-          <p className="truncate text-[11.5px] font-semibold text-[var(--meeting)]">
-            {contact.name}
-          </p>
-
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <span className="rounded bg-[#f5f3f0] px-1.5 py-0.5 text-[10px] font-medium text-[var(--muted)]">
-              {nurtureFrequencyLabel(contact.nurture_frequency_days)}
-            </span>
-
-            <span
-              className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                overdue
-                  ? 'bg-[#fdf0f0] text-[var(--medical)]'
-                  : 'bg-[#f0f6f0] text-[#5a7a60]'
-              }`}
-            >
-              {shortNurtureDateLabel(contact.next_nurture_date)}
-            </span>
-          </div>
-        </button>
-      )
-    })
-  )}
-</WidgetCard>
-
+          <WidgetCard
+            id="meetings"
+            label="Meetings"
+            count={meetingActivities.length}
+            color="#6484a1"
+            activeWidget={activeWidget}
+            setActiveWidget={setActiveWidget}
+          >
+            {meetingActivities.length === 0 ? (
+              <EmptyWidgetRow label="No meetings today." />
+            ) : (
+              meetingActivities.slice(0, 6).map((meeting) => (
+                <button
+                  key={meeting.id}
+                  type="button"
+                  className="block w-full border-b border-[rgba(44,44,42,0.06)] px-3 py-2 text-left transition hover:bg-[#f8fbfd] last:border-b-0"
+                >
+                  <p className="truncate text-[11.5px] font-semibold text-[var(--meeting)]">
+                    {meeting.title}
+                  </p>
+          
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <span className="rounded bg-[#f5f3f0] px-1.5 py-0.5 text-[10px] font-medium text-[var(--muted)]">
+                      {displayTimeLabel(meeting.start)}
+                    </span>
+          
+                    <span className="rounded bg-[rgba(100,132,161,0.14)] px-1.5 py-0.5 text-[10px] font-medium text-[#6484a1]">
+                      {displayTimeLabel(meeting.end)}
+                    </span>
+                  </div>
+                </button>
+              ))
+            )}
+          </WidgetCard>
+          
           <WidgetCard
             id="tasks"
             label="Tasks"
@@ -1201,52 +1202,50 @@ useEffect(() => {
           </WidgetCard>
 
           <WidgetCard
-            id="nurture"
-            label="Nurture"
-            count={nurtureDueContacts.length}
-            color="#8fa790"
-            activeWidget={activeWidget}
-            setActiveWidget={setActiveWidget}
-          >
-            {nurtureDueContacts.length === 0 ? (
-              <EmptyWidgetRow label="No nurture follow-ups due." />
-            ) : (
-              nurtureDueContacts.slice(0, 6).map((contact) => {
-                const overdueDays = daysOverdue(contact.next_nurture_date, todayKey)
-
-                return (
-                  <button
-                    key={contact.id}
-                    type="button"
-                    className="block w-full border-b border-[rgba(44,44,42,0.06)] px-3 py-2 text-left last:border-b-0"
-                    onClick={() => navigate(`/contacts/${contact.id}`)}
-                  >
-                    <p className="text-[11.5px] font-medium">{contact.name}</p>
-
-                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      {(contact.company || contact.email) && (
-                        <span className="rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92]">
-                          {contact.company || contact.email}
-                        </span>
-                      )}
-
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                          overdueDays > 0
-                            ? 'bg-[rgba(201,136,142,0.13)] text-[#c9888e]'
-                            : 'bg-[rgba(143,167,144,0.18)] text-[#6f8d70]'
-                        }`}
-                      >
-                        {overdueDays > 0
-                          ? `${overdueDays} day${overdueDays === 1 ? '' : 's'} overdue`
-                          : 'Due today'}
-                      </span>
-                    </div>
-                  </button>
-                )
-              })
-            )}
-          </WidgetCard>
+                  id="nurture"
+                  label="Nurture"
+                  count={nurtureDueContacts.length}
+                  color="#8fa790"
+                  activeWidget={activeWidget}
+                  setActiveWidget={setActiveWidget}
+                >
+                  {nurtureDueContacts.length === 0 ? (
+                    <EmptyWidgetRow label="No nurture follow-ups due." />
+                  ) : (
+                    nurtureDueContacts.slice(0, 6).map((contact) => {
+                      const overdue = isNurtureOverdue(contact.next_nurture_date, todayKey)
+                
+                      return (
+                        <button
+                          key={contact.id}
+                          type="button"
+                          className="block w-full border-b border-[rgba(44,44,42,0.06)] px-3 py-2 text-left transition hover:bg-[#f8fdf8] last:border-b-0"
+                          onClick={() => navigate(`/contacts/${contact.id}?tab=nurture`)}
+                        >
+                          <p className="truncate text-[11.5px] font-semibold text-[var(--meeting)]">
+                            {contact.name}
+                          </p>
+                
+                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                            <span className="rounded bg-[#f5f3f0] px-1.5 py-0.5 text-[10px] font-medium text-[var(--muted)]">
+                              {nurtureFrequencyLabel(contact.nurture_frequency_days)}
+                            </span>
+                
+                            <span
+                              className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                                overdue
+                                  ? 'bg-[#fdf0f0] text-[var(--medical)]'
+                                  : 'bg-[#f0f6f0] text-[#5a7a60]'
+                              }`}
+                            >
+                              {shortNurtureDateLabel(contact.next_nurture_date)}
+                            </span>
+                          </div>
+                        </button>
+                      )
+                    })
+                  )}
+                </WidgetCard>
 
           <WidgetCard
             id="content"
@@ -1271,6 +1270,27 @@ useEffect(() => {
         />
       </div>
 
+      <PlanMyDayWizard
+          open={openPlanMyDay}
+          onClose={() => setOpenPlanMyDay(false)}
+          todayLabel={todayLongLabel()}
+          todayKey={todayKey}
+          meetings={enrichedCalendarEvents.filter(
+            (event) => localDateKeyFromIso(event.startTime) === todayKey,
+          )}
+          tasks={tasks}
+          nurtureContacts={nurtureDueContacts}
+          contactById={contactById}
+          onOpenTask={(task) => setSelectedTask(task)}
+          onUpdateTask={async (task, patch) => {
+            await updateTask(task.id, patch)
+          }}
+          onArchiveTask={async (task) => {
+            await archiveTask(task.id)
+          }}
+          onOpenNurture={(contactId) => navigate(`/contacts/${contactId}?tab=nurture`)}
+        />
+      
       <AddActivityModal
         open={openAdd}
         onClose={() => setOpenAdd(false)}
