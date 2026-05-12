@@ -73,12 +73,10 @@ export function NurturePage() {
   return (
     <section className="overflow-hidden rounded-xl border-[0.5px] border-[var(--border)] bg-[var(--bg)]">
       <header className="border-b-[0.5px] border-[var(--border)] bg-white px-5 py-4">
-        <h1 className="font-serif text-[22px] font-medium tracking-[-0.4px]">
+        <h1 className="font-serif text-[26px] font-medium tracking-[-0.4px]">
           Nurture
         </h1>
-        <p className="mt-0.5 text-[11px] text-[var(--muted)]">
-          Relationship follow-ups grouped by timing and urgency.
-        </p>
+       
       </header>
 
       <div className="flex flex-wrap items-center gap-2 border-b-[0.5px] border-[var(--border)] bg-[var(--bg)] px-5 py-3">
