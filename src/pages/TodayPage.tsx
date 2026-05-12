@@ -646,6 +646,15 @@ function TimelineStartTimeInput({
     setValue(displayTimeLabel(activity.start))
   }, [activity.start])
 
+  useEffect(() => {
+  const openWizard = () => setOpenPlanMyDay(true)
+
+  window.addEventListener('spoonflow:open-plan-my-day', openWizard)
+
+  return () => {
+    window.removeEventListener('spoonflow:open-plan-my-day', openWizard)
+  }
+}, [])
   const commit = () => {
     const minutes = minutesFromTimeLabel(value)
 
