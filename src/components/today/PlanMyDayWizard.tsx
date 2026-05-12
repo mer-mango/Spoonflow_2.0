@@ -106,6 +106,7 @@ function statusPillClass(status: Task['status']) {
   if (status === 'toDo') return 'bg-[rgba(201,136,142,0.13)] text-[#b66b73]'
   if (status === 'inProgress') return 'bg-[rgba(212,167,122,0.18)] text-[#b57943]'
   if (status === 'awaitingReply') return 'bg-[#f4efe3] text-[#9a7b3f]'
+
   return 'bg-[rgba(143,167,144,0.18)] text-[#6f8d70]'
 }
 
@@ -137,8 +138,8 @@ function StepPills({
           onClick={() => setStep(step.id)}
           className={`rounded-full px-3 py-1.5 text-[11px] font-medium transition ${
             activeStep === step.id
-              ? 'bg-[var(--jamie)] text-white'
-              : 'bg-white/70 text-[var(--muted)] hover:bg-white'
+              ? 'bg-white text-[var(--jamie)]'
+              : 'bg-white/15 text-white/80 hover:bg-white/25'
           }`}
         >
           {step.label}
@@ -169,6 +170,37 @@ function SummaryCard({
   )
 }
 
+function SectionShell({
+  title,
+  description,
+  count,
+  countClassName,
+  children,
+}: {
+  title: string
+  description: string
+  count: number
+  countClassName: string
+  children: React.ReactNode
+}) {
+  return (
+    <section className="rounded-xl border border-[var(--border)] bg-white p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <h4 className="font-serif text-xl text-[var(--text)]">{title}</h4>
+          <p className="mt-1 text-sm text-[var(--muted)]">{description}</p>
+        </div>
+
+        <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${countClassName}`}>
+          {count}
+        </span>
+      </div>
+
+      {children}
+    </section>
+  )
+}
+
 function TaskTriageRow({
   task,
   todayKey,
@@ -188,16 +220,10 @@ function TaskTriageRow({
   const dueToday = isTodayDate(task.due_date, todayKey)
 
   return (
-    <article className="rounded-xl border border-[var(--border)] bg-white p-3">
+    <article className="rounded-xl border border-[var(--border)] bg-[#faf9f8] p-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <button
-          type="button"
-          onClick={onOpen}
-          className="min-w-0 flex-1 text-left"
-        >
-          <p className="truncate text-sm font-semibold text-[var(--text)]">
-            {task.title}
-          </p>
+        <button type="button" onClick={onOpen} className="min-w-0 flex-1 text-left">
+          <p className="truncate text-sm font-semibold text-[var(--text)]">{task.title}</p>
 
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <span
@@ -209,7 +235,11 @@ function TaskTriageRow({
                     : 'bg-[#f5f3f0] text-[var(--muted)]'
               }`}
             >
-              {overdue ? `Overdue · ${formatDateLabel(task.due_date)}` : formatDateLabel(task.due_date)}
+              {overdue
+                ? `! Overdue · ${formatDateLabel(task.due_date)}`
+                : dueToday
+                  ? `Due today · ${formatDateLabel(task.due_date)}`
+                  : formatDateLabel(task.due_date)}
             </span>
 
             {contactName && (
@@ -303,27 +333,18 @@ export function PlanMyDayWizard({
     [tasks, todayKey],
   )
 
-  const priorityTasks = useMemo(
-    () => tasks.filter((task) => !task.archived && task.status !== 'done' && task.starred),
-    [tasks],
-  )
-
-  const overdueTasks = dueTasks.filter((task) => isOverdueDate(task.due_date, todayKey))
-  const todayTasks = dueTasks.filter((task) => isTodayDate(task.due_date, todayKey))
   const contentDueCount = 0
-
-  const canGoBack = steps.findIndex((item) => item.id === step) > 0
-  const canGoForward = steps.findIndex((item) => item.id === step) < steps.length - 1
+  const stepIndex = steps.findIndex((item) => item.id === step)
+  const canGoBack = stepIndex > 0
+  const canGoForward = stepIndex < steps.length - 1
 
   const goBack = () => {
-    const index = steps.findIndex((item) => item.id === step)
-    const previous = steps[index - 1]
+    const previous = steps[stepIndex - 1]
     if (previous) setStep(previous.id)
   }
 
   const goForward = () => {
-    const index = steps.findIndex((item) => item.id === step)
-    const next = steps[index + 1]
+    const next = steps[stepIndex + 1]
     if (next) setStep(next.id)
   }
 
@@ -348,7 +369,6 @@ export function PlanMyDayWizard({
         </header>
 
         <div className="max-h-[68vh] overflow-y-auto p-5">
-        
           {step === 'overview' && (
             <div className="space-y-5">
               <div>
@@ -357,7 +377,7 @@ export function PlanMyDayWizard({
                   A quick look at what is already asking for your attention today.
                 </p>
               </div>
-          
+
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <SummaryCard label="Meetings" value={meetings.length} color="#6484a1" />
                 <SummaryCard label="Tasks" value={dueTasks.length} color="#c198ad" />
@@ -372,43 +392,61 @@ export function PlanMyDayWizard({
               <div>
                 <h3 className="font-serif text-2xl text-[var(--text)]">To-Do triage</h3>
                 <p className="mt-1 text-sm text-[var(--muted)]">
-                  Review tasks due today or overdue. Update status, reschedule, archive, or mark priority.
+                  Review what needs attention today across tasks, content, and nurture.
                 </p>
               </div>
 
-              {dueTasks.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-[var(--border)] bg-white p-6 text-sm text-[var(--muted)]">
-                  No overdue or due-today tasks.
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {dueTasks.map((task) => (
-                    <TaskTriageRow
-                      key={task.id}
-                      task={task}
-                      todayKey={todayKey}
-                      contactName={task.contact_id ? contactById.get(task.contact_id) ?? null : null}
-                      onOpen={() => onOpenTask(task)}
-                      onUpdate={(patch) => onUpdateTask(task, patch)}
-                      onArchive={() => onArchiveTask(task)}
-                    />
-                  ))}
-                </div>
-              )}
+              <SectionShell
+                title="Tasks"
+                description="Tasks due today or overdue."
+                count={dueTasks.length}
+                countClassName="bg-[rgba(193,152,173,0.16)] text-[#9f6e89]"
+              >
+                {dueTasks.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-[var(--border)] bg-[#faf9f8] p-5 text-sm text-[var(--muted)]">
+                    No overdue or due-today tasks.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {dueTasks.map((task) => (
+                      <TaskTriageRow
+                        key={task.id}
+                        task={task}
+                        todayKey={todayKey}
+                        contactName={task.contact_id ? contactById.get(task.contact_id) ?? null : null}
+                        onOpen={() => onOpenTask(task)}
+                        onUpdate={(patch) => onUpdateTask(task, patch)}
+                        onArchive={() => onArchiveTask(task)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </SectionShell>
 
-              <section className="rounded-xl border border-[var(--border)] bg-white p-4">
-                <p className="font-serif text-xl">Nurtures due</p>
-                <p className="mt-1 text-sm text-[var(--muted)]">
-                  Nurture follow-ups are handled in the contact profile’s Nurture tab.
-                </p>
+              <SectionShell
+                title="Content"
+                description="Content due today or overdue."
+                count={contentDueCount}
+                countClassName="bg-[rgba(226,183,190,0.22)] text-[#c98291]"
+              >
+                <div className="rounded-xl border border-dashed border-[var(--border)] bg-[#faf9f8] p-5 text-sm text-[var(--muted)]">
+                  Content due dates will show here once the Content page is wired into Plan My Day.
+                </div>
+              </SectionShell>
 
-                <div className="mt-3 space-y-2">
-                  {nurtureContacts.length === 0 ? (
-                    <p className="rounded-xl border border-dashed border-[var(--border)] bg-[#faf9f8] p-4 text-sm text-[var(--muted)]">
-                      No nurture follow-ups due.
-                    </p>
-                  ) : (
-                    nurtureContacts.map((contact) => (
+              <SectionShell
+                title="Nurtures"
+                description="Relationship follow-ups due today or overdue."
+                count={nurtureContacts.length}
+                countClassName="bg-[rgba(143,167,144,0.18)] text-[#6f8d70]"
+              >
+                {nurtureContacts.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-[var(--border)] bg-[#faf9f8] p-5 text-sm text-[var(--muted)]">
+                    No nurture follow-ups due.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {nurtureContacts.map((contact) => (
                       <button
                         key={contact.id}
                         type="button"
@@ -420,7 +458,8 @@ export function PlanMyDayWizard({
                             {contact.name}
                           </p>
                           <p className="mt-1 text-xs text-[var(--muted)]">
-                            {nurtureFrequencyLabel(contact.nurture_frequency_days)} · due {formatDateLabel(contact.next_nurture_date)}
+                            {nurtureFrequencyLabel(contact.nurture_frequency_days)} · due{' '}
+                            {formatDateLabel(contact.next_nurture_date)}
                           </p>
                         </div>
 
@@ -428,10 +467,10 @@ export function PlanMyDayWizard({
                           Open nurture
                         </span>
                       </button>
-                    ))
-                  )}
-                </div>
-              </section>
+                    ))}
+                  </div>
+                )}
+              </SectionShell>
             </div>
           )}
 
@@ -482,18 +521,18 @@ export function PlanMyDayWizard({
                 <h3 className="font-serif text-2xl text-[var(--text)]">
                   You’re ready to shape the day
                 </h3>
-               <p className="mt-1 text-sm text-[var(--muted)]">
-                You’ve reviewed your to-dos and meetings. Now head back to Today and manually shape your timeline.
-              </p>
+                <p className="mt-1 text-sm text-[var(--muted)]">
+                  You’ve reviewed your to-dos and meetings. Now head back to Today and manually shape your timeline.
+                </p>
               </div>
-          
+
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <SummaryCard label="Meetings" value={meetings.length} color="#6484a1" />
                 <SummaryCard label="Tasks" value={dueTasks.length} color="#c198ad" />
                 <SummaryCard label="Content" value={contentDueCount} color="#e2b7be" />
                 <SummaryCard label="Nurtures" value={nurtureContacts.length} color="#8fa790" />
               </div>
-          
+
               <section className="rounded-xl border border-[var(--border)] bg-white p-4">
                 <p className="font-serif text-xl">Next step</p>
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
@@ -502,6 +541,8 @@ export function PlanMyDayWizard({
               </section>
             </div>
           )}
+        </div>
+
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] bg-white px-5 py-4">
           <button
             type="button"
