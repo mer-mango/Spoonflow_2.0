@@ -58,9 +58,7 @@ export function CalendarPage() {
         <h1 className="font-serif text-[26px] font-medium tracking-[-0.4px]">
           Calendar
         </h1>
-        <p className="mt-1 text-sm text-[var(--muted)]">
-          Google Calendar, meetings, medical appointments, and working blocks.
-        </p>
+    
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
