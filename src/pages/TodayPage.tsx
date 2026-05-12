@@ -294,16 +294,6 @@ function dedupeActivities(activities: TimelineActivity[]) {
   })
 }
 
-function daysOverdue(value?: string | null, todayKey?: string) {
-  const dateKey = dateKeyFromDateValue(value)
-  if (!dateKey || !todayKey) return 0
-
-  const date = new Date(`${dateKey}T00:00:00`)
-  const today = new Date(`${todayKey}T00:00:00`)
-
-  return Math.max(0, Math.round((today.getTime() - date.getTime()) / 86400000))
-}
-
 function ActivityIcon({ type }: { type: string }) {
   if (type === 'meeting' || type === 'medical' || type === 'virtual') {
     return (
