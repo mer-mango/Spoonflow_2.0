@@ -45,8 +45,9 @@ export function ContentPage() {
     <section className="overflow-hidden rounded-xl border-[0.5px] border-[var(--border)] bg-[var(--bg)]">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b-[0.5px] border-[var(--border)] bg-white px-5 py-4">
         <div>
-          <h1 className="font-serif text-[22px] font-medium tracking-[-0.4px]">Content Studio</h1>
-          <p className="mt-0.5 text-[11px] text-[var(--muted)]">Capture ideas, move pieces through the pipeline, and open a focused editor when you’re ready.</p>
+          <h1 className="font-serif text-[26px] font-medium tracking-[-0.4px]">
+            Content
+          </h1>
         </div>
       </header>
 
