@@ -942,7 +942,8 @@ function TodayTimeline({
 export function TodayPage() {
   const navigate = useNavigate()
   const { enrichedCalendarEvents } = useGoogleCalendar()
-  const { tasks, updateTask, archiveTask } = useTasks()  const { contacts } = useContacts()
+  const { tasks, updateTask, archiveTask } = useTasks()  
+  const { contacts } = useContacts()
   const [openAdd, setOpenAdd] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [activeWidget, setActiveWidget] = useState<WidgetId | null>(null)
