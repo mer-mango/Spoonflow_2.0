@@ -115,11 +115,15 @@ export function TopBar() {
   const [openMenu, setOpenMenu] = useState<'jamie' | 'create' | null>(null)
 
   const jamieItems: MenuItem[] = [
-    { label: 'Plan My Day', dotBg: '#edf2ee', iconColor: '#8fa790', kind: 'check' },
-    { label: 'Pre-Meeting Prep', dotBg: '#eaeff4', iconColor: '#6484a1', kind: 'calendar' },
+    {
+      label: 'Plan My Day',
+      dotBg: '#edf2ee',
+      iconColor: '#8fa790',
+      kind: 'check',
+      action: () => window.dispatchEvent(new CustomEvent('spoonflow:open-plan-my-day')),
+},        
     { label: 'Post-Meeting Debrief', dotBg: '#f2eaf0', iconColor: '#c198ad', kind: 'task' },
     { label: 'PM Wind Down', dotBg: '#eef4f4', iconColor: '#bcd1d5', kind: 'swirl' },
-    { label: 'Content Capture', dotBg: '#faf2f3', iconColor: '#e2b7be', kind: 'pencil' },
     { label: 'Open Chat', dotBg: '#f3eaf1', iconColor: '#6b2358', kind: 'plus', emphasized: true },
   ]
 
