@@ -9,7 +9,7 @@ import { useTasks, type Task, type TaskStatus } from '../hooks/useTasks'
 type ViewMode = 'list' | 'kanban'
 
 type FilterMode =
-  | 'active'
+  | 'open'
   | 'all'
   | 'done'
   | 'overdue'
