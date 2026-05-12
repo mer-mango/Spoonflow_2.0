@@ -518,6 +518,13 @@ Prep in Interactions coming next
 {step === 'start' && (
 <div className="space-y-5">
 <div>
+<h3 className="font-serif text-2xl text-[var(--text)]">
+You’re ready to shape the day
+</h3>
+<p className="mt-1 text-sm text-[var(--muted)]">
+You’ve reviewed your to-dos and meetings. Now head back to Today and manually shape your timeline.
+</p>
+</div>
 
 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 <SummaryCard label="Meetings" value={meetings.length} color="#6484a1" />
@@ -526,6 +533,15 @@ Prep in Interactions coming next
 <SummaryCard label="Nurtures" value={nurtureContacts.length} color="#8fa790" />
 </div>
 
+<section className="rounded-xl border border-[var(--border)] bg-white p-4">
+<p className="font-serif text-xl">Next step</p>
+<p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+Use the Today timeline to add blocks like Tasks, Content, Nurture, Email, Break, PT, or Wind Down.
+</p>
+</section>
+</div>
+)}
+</div>
 
 <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] bg-white px-5 py-4">
 <button
