@@ -646,15 +646,6 @@ function TimelineStartTimeInput({
     setValue(displayTimeLabel(activity.start))
   }, [activity.start])
 
-  useEffect(() => {
-  const openWizard = () => setOpenPlanMyDay(true)
-
-  window.addEventListener('spoonflow:open-plan-my-day', openWizard)
-
-  return () => {
-    window.removeEventListener('spoonflow:open-plan-my-day', openWizard)
-  }
-}, [])
   const commit = () => {
     const minutes = minutesFromTimeLabel(value)
 
@@ -941,13 +932,15 @@ function TodayTimeline({
 export function TodayPage() {
   const navigate = useNavigate()
   const { enrichedCalendarEvents } = useGoogleCalendar()
-  const { tasks, updateTask, archiveTask } = useTasks()  
+  const { tasks, updateTask, archiveTask } = useTasks()
   const { contacts } = useContacts()
+
   const [openAdd, setOpenAdd] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [activeWidget, setActiveWidget] = useState<WidgetId | null>(null)
   const [activityStartTime, setActivityStartTime] = useState('09:00')
   const [openPlanMyDay, setOpenPlanMyDay] = useState(false)
+
   const [nowMinutes, setNowMinutes] = useState(() => {
     const now = new Date()
     return now.getHours() * 60 + now.getMinutes()
@@ -957,6 +950,16 @@ export function TodayPage() {
     'spoonflow_today_manual_activities',
     [],
   )
+  
+  useEffect(() => {
+    const openWizard = () => setOpenPlanMyDay(true)
+
+    window.addEventListener('spoonflow:open-plan-my-day', openWizard)
+
+    return () => {
+      window.removeEventListener('spoonflow:open-plan-my-day', openWizard)
+    }
+  }, [])
 
 useEffect(() => {
   const updateNow = () => {
