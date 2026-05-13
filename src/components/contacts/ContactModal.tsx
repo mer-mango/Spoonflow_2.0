@@ -352,6 +352,18 @@ export function ContactModal({
     [nurtureLogs],
   )
 
+  const selectedInteractionTasks = useMemo(
+  () =>
+    selectedInteraction
+      ? tasks.filter(
+          (task) =>
+            task.meeting_id === selectedInteraction.id &&
+            !task.archived,
+        )
+      : [],
+  [tasks, selectedInteraction],
+)
+
   const displayName = name.trim() || 'New Contact'
   const displayRole = [role, company].filter(Boolean).join(' · ')
   const avatarColor = contact?.color || '#8ba5a8'
@@ -1279,69 +1291,159 @@ export function ContactModal({
       />
 
       <MeetingInteractionModal
-        open={Boolean(selectedInteraction)}
-        interaction={selectedInteraction}
-        contactName={displayName}
-        actionItems={
-          selectedInteraction
-            ? actionItemsForInteraction(selectedInteraction.id)
-            : []
-        }
-        onClose={() => setSelectedInteraction(null)}
-        onSave={async (interactionId, patch) => {
-          const result = await updateInteraction(interactionId, patch)
+  open={Boolean(selectedInteraction)}
+  interaction={selectedInteraction}
+  contactId={contact?.id ?? null}
+  contactName={displayName}
+  actionItems={
+    selectedInteraction
+      ? actionItemsForInteraction(selectedInteraction.id)
+      : []
+  }
+  meetingTasks={selectedInteractionTasks}
+  onClose={() => setSelectedInteraction(null)}
+  onSave={async (interactionId, patch) => {
+    const result = await updateInteraction(interactionId, patch)
 
-          if (result.error) {
-            setErrorMessage(result.error.message || 'Meeting could not be saved.')
-            return result
-          }
+    if (result.error) {
+      setErrorMessage(result.error.message || 'Meeting could not be saved.')
+      return result
+    }
 
-          if (result.data) {
-            setSelectedInteraction(result.data as ContactInteraction)
-          }
+    if (result.data) {
+      setSelectedInteraction(result.data as ContactInteraction)
+    }
 
-          return result
-        }}
-        onArchive={async (interactionId) => {
-          const result = await archiveInteraction(interactionId)
+    return result
+  }}
+  onArchive={async (interactionId) => {
+    const result = await archiveInteraction(interactionId)
 
-          if (result.error) {
-            setErrorMessage(result.error.message || 'Meeting could not be archived.')
-          }
+    if (result.error) {
+      setErrorMessage(result.error.message || 'Meeting could not be archived.')
+    }
 
-          return result
-        }}
-        onCreateActionItem={async (interactionId, actionText) => {
-          const result = await createActionItem({
-            interaction_id: interactionId,
-            text: actionText,
-          })
+    return result
+  }}
+  onCreateActionItem={async (interactionId, actionText) => {
+    const result = await createActionItem({
+      interaction_id: interactionId,
+      text: actionText,
+    })
 
-          if (result.error) {
-            setErrorMessage(result.error.message || 'Action item could not be added.')
-          }
+    if (result.error) {
+      setErrorMessage(result.error.message || 'Action item could not be added.')
+    }
 
-          return result
-        }}
-        onUpdateActionItem={async (actionItemId, patch) => {
-          const result = await updateActionItem(actionItemId, patch)
+    return result
+  }}
+  onUpdateActionItem={async (actionItemId, patch) => {
+    const result = await updateActionItem(actionItemId, patch)
 
-          if (result.error) {
-            setErrorMessage(result.error.message || 'Action item could not be updated.')
-          }
+    if (result.error) {
+      setErrorMessage(result.error.message || 'Action item could not be updated.')
+    }
 
-          return result
-        }}
-        onArchiveActionItem={async (actionItemId) => {
-          const result = await archiveActionItem(actionItemId)
+    return result
+  }}
+  onArchiveActionItem={async (actionItemId) => {
+    const result = await archiveActionItem(actionItemId)
 
-          if (result.error) {
-            setErrorMessage(result.error.message || 'Action item could not be archived.')
-          }
+    if (result.error) {
+      setErrorMessage(result.error.message || 'Action item could not be archived.')
+    }
 
-          return result
-        }}
-      />
-    </>
-  )
+    return result
+  }}
+  onCreateTaskFromActionItem={async (actionItem, interaction) => {
+    if (!contact?.id) {
+      return {
+        data: null,
+        error: new Error('This meeting needs a linked contact before creating a task.'),
+      }
+    }
+
+    const taskResult = await createTask({
+      title: actionItem.text,
+      notes: `Created from meeting dossier: ${interaction.title}`,
+      status: 'toDo',
+      task_type: null,
+      due_date: null,
+      estimated_minutes: 15,
+      starred: false,
+      archived: false,
+      contact_id: contact.id,
+      goal_id: null,
+      content_item_id: null,
+      meeting_id: interaction.id,
+    })
+
+    if (taskResult.error || !taskResult.data) {
+      return taskResult
+    }
+
+    const actionItemResult = await updateActionItem(actionItem.id, {
+      task_id: taskResult.data.id,
+    })
+
+    if (actionItemResult.error) {
+      return {
+        data: null,
+        error: actionItemResult.error,
+      }
+    }
+
+    void onTasksChanged?.()
+
+    return {
+      data: taskResult.data as Task,
+      error: null,
+    }
+  }}
+  onEditTask={(task) => setSelectedTask(task)}
+  onArchiveTask={async (task) => {
+    const { error } = await archiveTask(task.id)
+
+    if (error) {
+      setErrorMessage(`Task archive failed: ${error.message}`)
+      return
+    }
+
+    void onTasksChanged?.()
+  }}
+  onQuickUpdateTask={async (task, patch) => {
+    const { error } = await updateTask(task.id, patch)
+
+    if (error) {
+      setErrorMessage(`Task update failed: ${error.message}`)
+      return
+    }
+
+    void onTasksChanged?.()
+  }}
+  onStarTask={async (task) => {
+    const { error } = await updateTask(task.id, {
+      starred: !task.starred,
+    })
+
+    if (error) {
+      setErrorMessage(`Task update failed: ${error.message}`)
+      return
+    }
+
+    void onTasksChanged?.()
+  }}
+  onToggleTask={async (task) => {
+    const { error } = await updateTask(task.id, {
+      status: task.status === 'done' ? 'toDo' : 'done',
+    })
+
+    if (error) {
+      setErrorMessage(`Task update failed: ${error.message}`)
+      return
+    }
+
+    void onTasksChanged?.()
+  }}
+/>
 }
