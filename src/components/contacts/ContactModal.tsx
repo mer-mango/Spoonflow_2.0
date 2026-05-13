@@ -1,14 +1,14 @@
-import { MeetingInteractionModal } from './MeetingInteractionModal'
-import {
-  useContactInteractions,
-  type ContactInteraction,
-} from '../../hooks/useContactInteractions'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Modal } from '../shared/Modal'
 import type { Contact, ContactUpdateInput } from '../../hooks/useContacts'
 import { useTasks, type Task } from '../../hooks/useTasks'
 import { TaskCard } from '../shared/TaskCard'
 import { TaskModal } from '../shared/TaskModal'
+import { MeetingInteractionModal } from './MeetingInteractionModal'
+import {
+  useContactInteractions,
+  type ContactInteraction,
+} from '../../hooks/useContactInteractions'
 
 type MutationResult = {
   error: { message?: string } | Error | null
@@ -285,17 +285,18 @@ export function ContactModal({
   onTasksChanged,
 }: Props) {
   const { tasks, createTask, updateTask, archiveTask } = useTasks()
+
   const {
-  interactions,
-  isLoading: isInteractionsLoading,
-  createInteraction,
-  updateInteraction,
-  archiveInteraction,
-  createActionItem,
-  updateActionItem,
-  archiveActionItem,
-  actionItemsForInteraction,
-} = useContactInteractions(contact?.id)
+    interactions,
+    isLoading: isInteractionsLoading,
+    createInteraction,
+    updateInteraction,
+    archiveInteraction,
+    createActionItem,
+    updateActionItem,
+    archiveActionItem,
+    actionItemsForInteraction,
+  } = useContactInteractions(contact?.id)
 
   const isNew = !contact
   const [activeTab, setActiveTab] = useState<Tab>('information')
@@ -304,7 +305,7 @@ export function ContactModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [selectedInteraction, setSelectedInteraction] =
-  useState<ContactInteraction | null>(null)
+    useState<ContactInteraction | null>(null)
 
   const [name, setName] = useState('')
   const [role, setRole] = useState('')
@@ -694,24 +695,9 @@ export function ContactModal({
                   <SectionHeader>Overview</SectionHeader>
 
                   <div className="grid gap-3 rounded-xl border border-[var(--border)] bg-white p-4 md:grid-cols-2">
-                    <Input
-                      label="Full name"
-                      value={name}
-                      onChange={setName}
-                      placeholder="Jane Smith"
-                    />
-                    <Input
-                      label="Role / Title"
-                      value={role}
-                      onChange={setRole}
-                      placeholder="Director of..."
-                    />
-                    <Input
-                      label="Company"
-                      value={company}
-                      onChange={setCompany}
-                      placeholder="Company"
-                    />
+                    <Input label="Full name" value={name} onChange={setName} placeholder="Jane Smith" />
+                    <Input label="Role / Title" value={role} onChange={setRole} placeholder="Director of..." />
+                    <Input label="Company" value={company} onChange={setCompany} placeholder="Company" />
                     <Input
                       label="From / how you know them"
                       value={fromNote}
@@ -736,31 +722,10 @@ export function ContactModal({
                   <SectionHeader>Contact info</SectionHeader>
 
                   <div className="grid gap-3 rounded-xl border border-[var(--border)] bg-white p-4 md:grid-cols-2">
-                    <Input
-                      label="Email"
-                      value={email}
-                      onChange={setEmail}
-                      placeholder="jane@example.com"
-                      type="email"
-                    />
-                    <Input
-                      label="LinkedIn URL"
-                      value={linkedinUrl}
-                      onChange={setLinkedinUrl}
-                      placeholder="https://linkedin.com/in/..."
-                    />
-                    <Input
-                      label="Website"
-                      value={website}
-                      onChange={setWebsite}
-                      placeholder="https://..."
-                    />
-                    <Input
-                      label="Scheduling link"
-                      value={schedulingLink}
-                      onChange={setSchedulingLink}
-                      placeholder="https://calendly.com/..."
-                    />
+                    <Input label="Email" value={email} onChange={setEmail} placeholder="jane@example.com" type="email" />
+                    <Input label="LinkedIn URL" value={linkedinUrl} onChange={setLinkedinUrl} placeholder="https://linkedin.com/in/..." />
+                    <Input label="Website" value={website} onChange={setWebsite} placeholder="https://..." />
+                    <Input label="Scheduling link" value={schedulingLink} onChange={setSchedulingLink} placeholder="https://calendly.com/..." />
                   </div>
                 </section>
 
@@ -769,143 +734,140 @@ export function ContactModal({
 
                   <div className="grid gap-3 rounded-xl border border-[var(--border)] bg-white p-4 md:grid-cols-2">
                     <Input label="City" value={city} onChange={setCity} placeholder="City" />
-                    <Input
-                      label="State"
-                      value={stateValue}
-                      onChange={setStateValue}
-                      placeholder="State"
-                    />
+                    <Input label="State" value={stateValue} onChange={setStateValue} placeholder="State" />
                   </div>
                 </section>
               </div>
             )}
 
             {activeTab === 'interactions' && (
-  <div className="space-y-4">
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <p className="font-serif text-xl">Interactions</p>
-        <p className="mt-1 text-sm text-[var(--muted)]">
-          Meeting dossiers, prep notes, post-meeting notes, and action items for this contact.
-        </p>
-      </div>
-
-      <button
-        type="button"
-        disabled={!contact?.id}
-        onClick={async () => {
-          if (!contact?.id) {
-            setErrorMessage('Save this contact before adding meeting interactions.')
-            return
-          }
-
-          const today = new Date()
-          const year = today.getFullYear()
-          const month = String(today.getMonth() + 1).padStart(2, '0')
-          const day = String(today.getDate()).padStart(2, '0')
-
-          const { data, error } = await createInteraction({
-            contact_id: contact.id,
-            title: 'Untitled meeting',
-            interaction_date: `${year}-${month}-${day}`,
-            source: 'manual',
-          })
-
-          if (error) {
-            setErrorMessage(error.message || 'Meeting interaction could not be created.')
-            return
-          }
-
-          if (data) {
-            setSelectedInteraction(data as ContactInteraction)
-          }
-        }}
-        className="rounded-lg bg-[rgba(100,132,161,0.16)] px-3 py-2 text-xs font-semibold text-[#6484a1] disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        + New Meeting
-      </button>
-    </div>
-
-    {isInteractionsLoading ? (
-      <div className="rounded-xl border border-[var(--border)] bg-white p-5 text-sm text-[var(--muted)]">
-        Loading interactions...
-      </div>
-    ) : interactions.length === 0 ? (
-      <div className="rounded-xl border border-dashed border-[var(--border)] bg-white p-8 text-center">
-        <p className="font-serif text-xl text-[var(--text)]">No interactions yet</p>
-        <p className="mx-auto mt-2 max-w-md text-sm text-[var(--muted)]">
-          Create a meeting dossier to save prep notes, during-meeting notes, post-meeting notes, and action items.
-        </p>
-      </div>
-    ) : (
-      <div className="space-y-2">
-        {interactions.map((interaction) => {
-          const interactionActionItems = actionItemsForInteraction(interaction.id)
-
-          const dateLabel = interaction.interaction_date
-            ? new Date(`${interaction.interaction_date}T00:00:00`).toLocaleDateString([], {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              })
-            : 'No date set'
-
-          return (
-            <article
-              key={interaction.id}
-              className="rounded-xl border border-[var(--border)] bg-white p-4"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() => setSelectedInteraction(interaction)}
-                  className="min-w-0 flex-1 text-left"
-                >
-                  <p className="font-serif text-lg text-[var(--text)]">
-                    {interaction.title}
-                  </p>
-
-                  <p className="mt-1 text-sm text-[var(--muted)]">{dateLabel}</p>
-
-                  <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                    <span className="rounded-full bg-[rgba(100,132,161,0.14)] px-2 py-1 text-[10.5px] font-medium text-[#6484a1]">
-                      Meeting
-                    </span>
-
-                    {interaction.prep_notes && (
-                      <span className="rounded-full bg-[rgba(143,167,144,0.16)] px-2 py-1 text-[10.5px] font-medium text-[#6f8d70]">
-                        Prep added
-                      </span>
-                    )}
-
-                    {interaction.post_meeting_summary && (
-                      <span className="rounded-full bg-[rgba(193,152,173,0.16)] px-2 py-1 text-[10.5px] font-medium text-[#9f6e89]">
-                        Summary added
-                      </span>
-                    )}
-
-                    <span className="rounded-full bg-[#f5f3f0] px-2 py-1 text-[10.5px] font-medium text-[var(--muted)]">
-                      {interactionActionItems.length} action item
-                      {interactionActionItems.length === 1 ? '' : 's'}
-                    </span>
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-serif text-xl">Interactions</p>
+                    <p className="mt-1 text-sm text-[var(--muted)]">
+                      Meeting dossiers, prep notes, post-meeting notes, and action items for this contact.
+                    </p>
                   </div>
-                </button>
 
-                <button
-                  type="button"
-                  onClick={() => setSelectedInteraction(interaction)}
-                  className="rounded-lg bg-[rgba(100,132,161,0.16)] px-3 py-2 text-xs font-semibold text-[#6484a1]"
-                >
-                  Open dossier
-                </button>
+                  <button
+                    type="button"
+                    disabled={!contact?.id}
+                    onClick={async () => {
+                      if (!contact?.id) {
+                        setErrorMessage('Save this contact before adding meeting interactions.')
+                        return
+                      }
+
+                      const today = new Date()
+                      const year = today.getFullYear()
+                      const month = String(today.getMonth() + 1).padStart(2, '0')
+                      const day = String(today.getDate()).padStart(2, '0')
+
+                      const { data, error } = await createInteraction({
+                        contact_id: contact.id,
+                        title: 'Untitled meeting',
+                        interaction_date: `${year}-${month}-${day}`,
+                        source: 'manual',
+                      })
+
+                      if (error) {
+                        setErrorMessage(error.message || 'Meeting interaction could not be created.')
+                        return
+                      }
+
+                      if (data) {
+                        setSelectedInteraction(data as ContactInteraction)
+                      }
+                    }}
+                    className="rounded-lg bg-[rgba(100,132,161,0.16)] px-3 py-2 text-xs font-semibold text-[#6484a1] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    + New Meeting
+                  </button>
+                </div>
+
+                {isInteractionsLoading ? (
+                  <div className="rounded-xl border border-[var(--border)] bg-white p-5 text-sm text-[var(--muted)]">
+                    Loading interactions...
+                  </div>
+                ) : interactions.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-[var(--border)] bg-white p-8 text-center">
+                    <p className="font-serif text-xl text-[var(--text)]">No interactions yet</p>
+                    <p className="mx-auto mt-2 max-w-md text-sm text-[var(--muted)]">
+                      Create a meeting dossier to save prep notes, during-meeting notes, post-meeting notes, and action items.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {interactions.map((interaction) => {
+                      const interactionActionItems = actionItemsForInteraction(interaction.id)
+
+                      const interactionDateLabel = interaction.interaction_date
+                        ? new Date(`${interaction.interaction_date}T00:00:00`).toLocaleDateString([], {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })
+                        : 'No date set'
+
+                      return (
+                        <article
+                          key={interaction.id}
+                          className="rounded-xl border border-[var(--border)] bg-white p-4"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedInteraction(interaction)}
+                              className="min-w-0 flex-1 text-left"
+                            >
+                              <p className="font-serif text-lg text-[var(--text)]">
+                                {interaction.title}
+                              </p>
+
+                              <p className="mt-1 text-sm text-[var(--muted)]">
+                                {interactionDateLabel}
+                              </p>
+
+                              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                                <span className="rounded-full bg-[rgba(100,132,161,0.14)] px-2 py-1 text-[10.5px] font-medium text-[#6484a1]">
+                                  Meeting
+                                </span>
+
+                                {interaction.prep_notes && (
+                                  <span className="rounded-full bg-[rgba(143,167,144,0.16)] px-2 py-1 text-[10.5px] font-medium text-[#6f8d70]">
+                                    Prep added
+                                  </span>
+                                )}
+
+                                {interaction.post_meeting_summary && (
+                                  <span className="rounded-full bg-[rgba(193,152,173,0.16)] px-2 py-1 text-[10.5px] font-medium text-[#9f6e89]">
+                                    Summary added
+                                  </span>
+                                )}
+
+                                <span className="rounded-full bg-[#f5f3f0] px-2 py-1 text-[10.5px] font-medium text-[var(--muted)]">
+                                  {interactionActionItems.length} action item
+                                  {interactionActionItems.length === 1 ? '' : 's'}
+                                </span>
+                              </div>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setSelectedInteraction(interaction)}
+                              className="rounded-lg bg-[rgba(100,132,161,0.16)] px-3 py-2 text-xs font-semibold text-[#6484a1]"
+                            >
+                              Open dossier
+                            </button>
+                          </div>
+                        </article>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
-            </article>
-          )
-        })}
-      </div>
-    )}
-  </div>
-)}
+            )}
 
             {activeTab === 'notes' && (
               <div className="space-y-3">
@@ -1307,10 +1269,6 @@ export function ContactModal({
             </div>
           </div>
         </div>
-       return (
-    <>
-      <Modal>
-        ...
       </Modal>
 
       <TaskModal
@@ -1353,10 +1311,10 @@ export function ContactModal({
 
           return result
         }}
-        onCreateActionItem={async (interactionId, text) => {
+        onCreateActionItem={async (interactionId, actionText) => {
           const result = await createActionItem({
             interaction_id: interactionId,
-            text,
+            text: actionText,
           })
 
           if (result.error) {
