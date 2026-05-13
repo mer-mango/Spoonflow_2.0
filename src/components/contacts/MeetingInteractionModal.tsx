@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Modal } from '../shared/Modal'
 import type {
   ContactInteraction,
@@ -31,9 +31,7 @@ type Props = {
     actionItemId: string,
     patch: InteractionActionItemUpdateInput,
   ) => MutationResult<InteractionActionItem>
-  onArchiveActionItem: (
-    actionItemId: string,
-  ) => MutationResult<InteractionActionItem>
+  onArchiveActionItem: (actionItemId: string) => MutationResult<InteractionActionItem>
 }
 
 function dateInputValue(value?: string | null) {
@@ -109,7 +107,7 @@ function formatMeetingMeta(interaction: ContactInteraction) {
   return dateLabel
 }
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
+function FieldLabel({ children }: { children: ReactNode }) {
   return (
     <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
       {children}
@@ -164,8 +162,6 @@ export function MeetingInteractionModal({
   const [duringMeetingNotes, setDuringMeetingNotes] = useState('')
   const [fathomUrl, setFathomUrl] = useState('')
   const [postMeetingSummary, setPostMeetingSummary] = useState('')
-  const [fullTranscript, setFullTranscript] = useState('')
-  const [transcriptOpen, setTranscriptOpen] = useState(false)
 
   const [newActionItem, setNewActionItem] = useState('')
   const [actionItemDrafts, setActionItemDrafts] = useState<Record<string, string>>({})
@@ -183,8 +179,6 @@ export function MeetingInteractionModal({
     setDuringMeetingNotes(interaction.during_meeting_notes ?? '')
     setFathomUrl(interaction.fathom_url ?? '')
     setPostMeetingSummary(interaction.post_meeting_summary ?? '')
-    setFullTranscript(interaction.full_transcript ?? '')
-    setTranscriptOpen(Boolean(interaction.full_transcript))
     setNewActionItem('')
     setErrorMessage(null)
 
@@ -218,7 +212,6 @@ export function MeetingInteractionModal({
       during_meeting_notes: duringMeetingNotes || null,
       fathom_url: fathomUrl || null,
       post_meeting_summary: postMeetingSummary || null,
-      full_transcript: fullTranscript || null,
     })
 
     setIsSaving(false)
@@ -412,7 +405,7 @@ export function MeetingInteractionModal({
           <section className="rounded-xl border border-[var(--border)] bg-white p-4">
             <p className="font-serif text-xl">Post-meeting notes</p>
             <p className="mt-1 text-sm text-[var(--muted)]">
-              Store the Fathom link, summary, transcript, and key context you want to keep.
+              Store the Fathom link, summary, and key context you want to keep.
             </p>
 
             <div className="mt-4 space-y-4">
@@ -433,29 +426,6 @@ export function MeetingInteractionModal({
                 placeholder="Brief meeting summary..."
                 rows={6}
               />
-
-              <div className="rounded-xl border border-[var(--border)] bg-[#faf9f8]">
-                <button
-                  type="button"
-                  onClick={() => setTranscriptOpen((value) => !value)}
-                  className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-[var(--text)]"
-                >
-                  <span>Full transcript</span>
-                  <span className="text-[var(--muted)]">{transcriptOpen ? '▾' : '▸'}</span>
-                </button>
-
-                {transcriptOpen && (
-                  <div className="border-t border-[var(--border)] p-4">
-                    <Textarea
-                      label="Transcript"
-                      value={fullTranscript}
-                      onChange={setFullTranscript}
-                      placeholder="Paste transcript here..."
-                      rows={10}
-                    />
-                  </div>
-                )}
-              </div>
             </div>
           </section>
 
