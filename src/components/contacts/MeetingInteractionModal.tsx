@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Modal } from '../shared/Modal'
+import { TaskCard } from '../shared/TaskCard'
+import type { Task } from '../../hooks/useTasks'
 import type {
   ContactInteraction,
   ContactInteractionUpdateInput,
@@ -15,8 +17,10 @@ type MutationResult<T> = Promise<{
 type Props = {
   open: boolean
   interaction: ContactInteraction | null
+  contactId: string | null
   contactName: string
   actionItems: InteractionActionItem[]
+  meetingTasks: Task[]
   onClose: () => void
   onSave: (
     interactionId: string,
@@ -32,6 +36,15 @@ type Props = {
     patch: InteractionActionItemUpdateInput,
   ) => MutationResult<InteractionActionItem>
   onArchiveActionItem: (actionItemId: string) => MutationResult<InteractionActionItem>
+  onCreateTaskFromActionItem: (
+    actionItem: InteractionActionItem,
+    interaction: ContactInteraction,
+  ) => MutationResult<Task>
+  onEditTask: (task: Task) => void
+  onArchiveTask: (task: Task) => Promise<void> | void
+  onQuickUpdateTask: (task: Task, patch: Partial<Task>) => Promise<void> | void
+  onStarTask: (task: Task) => Promise<void> | void
+  onToggleTask: (task: Task) => Promise<void> | void
 }
 
 function dateInputValue(value?: string | null) {
@@ -145,14 +158,22 @@ function Textarea({
 export function MeetingInteractionModal({
   open,
   interaction,
+  contactId,
   contactName,
   actionItems,
+  meetingTasks,
   onClose,
   onSave,
   onArchive,
   onCreateActionItem,
   onUpdateActionItem,
   onArchiveActionItem,
+  onCreateTaskFromActionItem,
+  onEditTask,
+  onArchiveTask,
+  onQuickUpdateTask,
+  onStarTask,
+  onToggleTask,
 }: Props) {
   const [title, setTitle] = useState('')
   const [interactionDate, setInteractionDate] = useState('')
@@ -166,6 +187,9 @@ export function MeetingInteractionModal({
   const [newActionItem, setNewActionItem] = useState('')
   const [actionItemDrafts, setActionItemDrafts] = useState<Record<string, string>>({})
   const [isSaving, setIsSaving] = useState(false)
+  const [creatingTaskForActionItemId, setCreatingTaskForActionItemId] = useState<string | null>(
+    null,
+  )
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
@@ -180,6 +204,7 @@ export function MeetingInteractionModal({
     setFathomUrl(interaction.fathom_url ?? '')
     setPostMeetingSummary(interaction.post_meeting_summary ?? '')
     setNewActionItem('')
+    setCreatingTaskForActionItemId(null)
     setErrorMessage(null)
 
     const drafts: Record<string, string> = {}
@@ -195,6 +220,11 @@ export function MeetingInteractionModal({
         (a.created_at ?? '').localeCompare(b.created_at ?? ''),
       ),
     [actionItems],
+  )
+
+  const taskById = useMemo(
+    () => new Map(meetingTasks.map((task) => [task.id, task])),
+    [meetingTasks],
   )
 
   if (!interaction) return null
@@ -282,6 +312,19 @@ export function MeetingInteractionModal({
     }
   }
 
+  const handleCreateTaskFromActionItem = async (actionItem: InteractionActionItem) => {
+    setCreatingTaskForActionItemId(actionItem.id)
+    setErrorMessage(null)
+
+    const { error } = await onCreateTaskFromActionItem(actionItem, interaction)
+
+    setCreatingTaskForActionItemId(null)
+
+    if (error) {
+      setErrorMessage(error.message || 'Task could not be created from this action item.')
+    }
+  }
+
   return (
     <Modal
       open={open}
@@ -292,7 +335,7 @@ export function MeetingInteractionModal({
       contentClassName="rounded-2xl shadow-2xl"
     >
       <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-white">
-        <div className="bg-[var(--jamie)] px-5 py-4 text-white">
+        <div className="bg-[var(--meeting)] px-5 py-4 text-white">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-sm font-medium text-white/80">Meeting Dossier</p>
@@ -432,7 +475,7 @@ export function MeetingInteractionModal({
           <section className="rounded-xl border border-[var(--border)] bg-white p-4">
             <p className="font-serif text-xl">Action items</p>
             <p className="mt-1 text-sm text-[var(--muted)]">
-              Capture follow-up actions from the meeting. Task creation will be wired next.
+              Capture follow-up actions from the meeting and turn them into editable tasks.
             </p>
 
             <div className="mt-4 rounded-xl border border-dashed border-[var(--border)] bg-[#faf9f8] p-3">
@@ -454,47 +497,92 @@ export function MeetingInteractionModal({
               </div>
             </div>
 
-            <div className="mt-4 space-y-2">
+            <div className="mt-4 space-y-3">
               {sortedActionItems.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-[var(--border)] bg-[#faf9f8] p-5 text-sm text-[var(--muted)]">
                   No action items added yet.
                 </div>
               ) : (
-                sortedActionItems.map((item) => (
-                  <article
-                    key={item.id}
-                    className="rounded-xl border border-[var(--border)] bg-[#faf9f8] p-3"
-                  >
-                    <div className="flex flex-col gap-2 md:flex-row md:items-center">
-                      <input
-                        value={actionItemDrafts[item.id] ?? item.text}
-                        onChange={(event) =>
-                          setActionItemDrafts((prev) => ({
-                            ...prev,
-                            [item.id]: event.target.value,
-                          }))
-                        }
-                        className="flex-1 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--meeting)]"
-                      />
+                sortedActionItems.map((item) => {
+                  const linkedTask = item.task_id ? taskById.get(item.task_id) ?? null : null
 
-                      <button
-                        type="button"
-                        onClick={() => void handleSaveActionItem(item)}
-                        className="rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--text)] hover:bg-black/[0.03]"
-                      >
-                        Save
-                      </button>
+                  return (
+                    <article
+                      key={item.id}
+                      className="rounded-xl border border-[var(--border)] bg-[#faf9f8] p-3"
+                    >
+                      <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                        <input
+                          value={actionItemDrafts[item.id] ?? item.text}
+                          onChange={(event) =>
+                            setActionItemDrafts((prev) => ({
+                              ...prev,
+                              [item.id]: event.target.value,
+                            }))
+                          }
+                          className="flex-1 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--meeting)]"
+                        />
 
-                      <button
-                        type="button"
-                        onClick={() => void handleArchiveActionItem(item.id)}
-                        className="rounded-lg px-3 py-2 text-xs font-medium text-[var(--muted)] hover:bg-black/[0.03]"
-                      >
-                        Archive
-                      </button>
-                    </div>
-                  </article>
-                ))
+                        <button
+                          type="button"
+                          onClick={() => void handleSaveActionItem(item)}
+                          className="rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--text)] hover:bg-black/[0.03]"
+                        >
+                          Save
+                        </button>
+
+                        {!item.task_id && (
+                          <button
+                            type="button"
+                            onClick={() => void handleCreateTaskFromActionItem(item)}
+                            disabled={
+                              creatingTaskForActionItemId === item.id ||
+                              !contactId
+                            }
+                            className="rounded-lg bg-[rgba(193,152,173,0.18)] px-3 py-2 text-xs font-semibold text-[#9f6e89] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {creatingTaskForActionItemId === item.id
+                              ? 'Creating...'
+                              : 'Create Task'}
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => void handleArchiveActionItem(item.id)}
+                          className="rounded-lg px-3 py-2 text-xs font-medium text-[var(--muted)] hover:bg-black/[0.03]"
+                        >
+                          Archive
+                        </button>
+                      </div>
+
+                      {item.task_id && !linkedTask && (
+                        <div className="mt-3 rounded-lg bg-[rgba(143,167,144,0.12)] px-3 py-2 text-xs font-medium text-[#6f8d70]">
+                          Task created.
+                        </div>
+                      )}
+
+                      {linkedTask && (
+                        <div className="mt-3">
+                          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
+                            Linked task
+                          </p>
+
+                          <TaskCard
+                            task={linkedTask}
+                            contactName={contactName}
+                            contactId={contactId}
+                            onEdit={onEditTask}
+                            onArchive={onArchiveTask}
+                            onQuickUpdate={onQuickUpdateTask}
+                            onStar={onStarTask}
+                            onToggle={onToggleTask}
+                          />
+                        </div>
+                      )}
+                    </article>
+                  )
+                })
               )}
             </div>
           </section>
@@ -523,7 +611,7 @@ export function MeetingInteractionModal({
               type="button"
               onClick={() => void handleSave()}
               disabled={isSaving}
-              className="rounded-lg bg-[var(--jamie)] px-5 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              className="rounded-lg bg-[var(--meeting)] px-5 py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
               {isSaving ? 'Saving...' : 'Save Changes'}
             </button>
