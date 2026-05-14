@@ -5,7 +5,7 @@ import { TaskModal } from '../components/shared/TaskModal'
 import { AddActivityModal } from '../components/today/AddActivityModal'
 import type { TimelineActivity } from '../components/today/TimelineBlock'
 import { useContacts } from '../hooks/useContacts'
-import { useGoogleCalendar } from '../hooks/useGoogleCalendar'
+import { BUFFER_RULES, useGoogleCalendar } from '../hooks/useGoogleCalendar'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useTasks, type Task } from '../hooks/useTasks'
 
@@ -1076,22 +1076,68 @@ useEffect(() => {
   }
 
   const meetingActivities = useMemo<TimelineActivity[]>(() => {
-    const todaysEvents = enrichedCalendarEvents.filter(
-      (event) => localDateKeyFromIso(event.startTime) === todayKey,
-    )
+  const todaysEvents = enrichedCalendarEvents.filter(
+    (event) => localDateKeyFromIso(event.startTime) === todayKey,
+  )
 
-    const mappedEvents: TimelineActivity[] = todaysEvents.map((event) => ({
+  const mappedEvents: TimelineActivity[] = todaysEvents.flatMap((event) => {
+    const eventType = calendarTypeForEvent(event.calendarId)
+
+    const mainEvent: TimelineActivity = {
       id: `meeting-${event.id}-${event.startTime}`,
-      type: calendarTypeForEvent(event.calendarId),
+      type: eventType,
       title: event.title,
       start: toTimeLabel(event.startTime),
       end: toTimeLabel(event.endTime),
       isJamieAdded: true,
-    }))
+    }
 
-    return dedupeActivities(mappedEvents)
-  }, [enrichedCalendarEvents, todayKey])
+    const bufferRule = event.calendarId ? BUFFER_RULES[event.calendarId] : null
 
+    if (!bufferRule) {
+      return [mainEvent]
+    }
+
+    const eventStart = new Date(event.startTime)
+    const eventEnd = new Date(event.endTime)
+
+    const beforeStart = new Date(eventStart.getTime() - bufferRule.duration * 60 * 1000)
+    const beforeEnd = eventStart
+
+    const afterStart = eventEnd
+    const afterEnd = new Date(eventEnd.getTime() + bufferRule.duration * 60 * 1000)
+
+    const buffers: TimelineActivity[] = []
+
+    if (localDateKeyFromIso(beforeStart.toISOString()) === todayKey) {
+      buffers.push({
+        id: `buffer-before-${event.id}-${event.startTime}`,
+        type: bufferRule.type,
+        title: bufferRule.beforeLabel,
+        start: toTimeLabel(beforeStart.toISOString()),
+        end: toTimeLabel(beforeEnd.toISOString()),
+        isJamieAdded: true,
+      })
+    }
+
+    buffers.push(mainEvent)
+
+    if (localDateKeyFromIso(afterStart.toISOString()) === todayKey) {
+      buffers.push({
+        id: `buffer-after-${event.id}-${event.endTime}`,
+        type: bufferRule.type,
+        title: bufferRule.afterLabel,
+        start: toTimeLabel(afterStart.toISOString()),
+        end: toTimeLabel(afterEnd.toISOString()),
+        isJamieAdded: true,
+      })
+    }
+
+    return buffers
+  })
+
+  return dedupeActivities(mappedEvents)
+}, [enrichedCalendarEvents, todayKey])
   const activeTasks = useMemo(() => tasks.filter(isActiveTask), [tasks])
 
   const overdueTasks = useMemo(
