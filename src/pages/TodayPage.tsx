@@ -508,9 +508,6 @@ function TaskWidgetRow({
     dueChip = 'no due date'
   }
 
-  let dueLine = task.due_date ? `Due ${formatDueLabel(task.due_date)}` : 'No due date'
-  let dueLineClass = 'text-[10px] font-medium text-[var(--muted)]'
-
   if (overdue) {
     dueLine = `Overdue · ${formatDueLabel(task.due_date)}`
     dueLineClass = 'text-[10px] font-semibold text-[#c9888e]'
