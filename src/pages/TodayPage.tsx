@@ -25,6 +25,7 @@ type TimelineDisplayItem = {
   isJamieAdded?: boolean
   contactId?: string | null
   contactName?: string | null
+  meetingLink?: string | null
 }
 
 const activityColors: Record<string, string> = {
@@ -1126,21 +1127,25 @@ useEffect(() => {
   )
 
   const calendarItems: TimelineDisplayItem[] = meetingActivities.map((activity) => {
-    const contactId = contactIdByTimelineMeetingId.get(activity.id) ?? null
+  const contactId = contactIdByTimelineMeetingId.get(activity.id) ?? null
 
-    return {
-      id: activity.id,
-      type: activity.type,
-      title: activity.title,
-      start: displayTimeLabel(activity.start),
-      end: displayTimeLabel(activity.end),
-      durationMinutes: durationFromActivity(activity),
-      isManual: false,
-      isJamieAdded: activity.isJamieAdded,
-      contactId,
-      contactName: contactId ? contactById.get(contactId) ?? null : null,
-    }
-  })
+  return {
+    id: activity.id,
+    type: activity.type,
+    title: activity.title,
+    start: displayTimeLabel(activity.start),
+    end: displayTimeLabel(activity.end),
+    durationMinutes: durationFromActivity(activity),
+    isManual: false,
+    isJamieAdded: activity.isJamieAdded,
+    contactId,
+    contactName: contactId ? contactById.get(contactId) ?? null : null,
+    meetingLink:
+      enrichedCalendarEvents.find(
+        (event) => `meeting-${event.id}-${event.startTime}` === activity.id,
+      )?.meetingLink ?? null,
+  }
+})
 
     const manualItems: TimelineDisplayItem[] = manualActivities.map((activity) => ({
       id: activity.id,
