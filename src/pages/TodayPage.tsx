@@ -9,8 +9,11 @@ import { BUFFER_RULES, useGoogleCalendar } from '../hooks/useGoogleCalendar'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useTasks, type Task } from '../hooks/useTasks'
 
-const MEDICAL_CALENDAR_ID = import.meta.env.VITE_GOOGLE_MEDICAL_CALENDAR_ID
-const VIRTUAL_CALENDAR_ID = import.meta.env.VITE_GOOGLE_VIRTUAL_CALENDAR_ID
+const MEDICAL_CALENDAR_ID =
+  (import.meta.env.VITE_GOOGLE_MEDICAL_CALENDAR_ID || '').trim()
+
+const VIRTUAL_CALENDAR_ID =
+  (import.meta.env.VITE_GOOGLE_VIRTUAL_CALENDAR_ID || '').trim()
 
 type WidgetId = 'meetings' | 'tasks' | 'nurture' | 'content'
 
