@@ -841,10 +841,8 @@ function TodayTimeline({
 
                   <div className="flex w-9 shrink-0 flex-col items-center">
                     <div
-                      <div
-                       <div
-                    className="flex h-[34px] w-[34px] items-center justify-center rounded-full"
-                    style={{
+                      className="flex h-[34px] w-[34px] items-center justify-center rounded-full"
+                      style={{
                       backgroundColor: isBufferActivityTitle(activity.title) ? '#b9cad8' : color,
                       outline: isCurrent
                         ? `4px solid ${color}33`
