@@ -1356,21 +1356,9 @@ useEffect(() => {
             {meeting.title}
           </p>
 
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <span className="rounded bg-[#f5f3f0] px-1.5 py-0.5 text-[10px] font-medium text-[var(--muted)]">
-              {displayTimeLabel(meeting.start)}
-            </span>
-
-            <span
-              className="rounded px-1.5 py-0.5 text-[10px] font-medium"
-              style={{
-                backgroundColor: `${meetingColor}22`,
-                color: meetingColor,
-              }}
-            >
-              {displayTimeLabel(meeting.end)}
-            </span>
-          </div>
+          <p className="mt-1 text-[10.5px] font-normal text-[var(--muted)]">
+            {displayTimeLabel(meeting.start)} ({durationLabel(durationFromActivity(meeting))})
+          </p>
         </button>
       )
     })
