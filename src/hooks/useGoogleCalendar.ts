@@ -1,15 +1,29 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-const EHS_MTGS_CALENDAR_ID = import.meta.env.VITE_GOOGLE_EHS_MTGS_CALENDAR_ID || ''
-const VIRTUAL_CALENDAR_ID = import.meta.env.VITE_GOOGLE_VIRTUAL_CALENDAR_ID || ''
-const MEDICAL_CALENDAR_ID = import.meta.env.VITE_GOOGLE_MEDICAL_CALENDAR_ID || ''
-const CBC_CALENDAR_ID = import.meta.env.VITE_GOOGLE_CBC_CALENDAR_ID || ''
-const FAMILY_CALENDAR_ID = import.meta.env.VITE_GOOGLE_FAMILY_CALENDAR_ID || ''
-const COMMON_GROUNDS_CALENDAR_ID = import.meta.env.VITE_GOOGLE_COMMON_GROUNDS_CALENDAR_ID || ''
-const TYT_2026_SPRING_CALENDAR_ID = import.meta.env.VITE_GOOGLE_TYT_2026_SPRING_CALENDAR_ID || ''
+const EHS_MTGS_CALENDAR_ID =
+  (import.meta.env.VITE_GOOGLE_EHS_MTGS_CALENDAR_ID || '').trim()
+
+const VIRTUAL_CALENDAR_ID =
+  (import.meta.env.VITE_GOOGLE_VIRTUAL_CALENDAR_ID || '').trim()
+
+const MEDICAL_CALENDAR_ID =
+  (import.meta.env.VITE_GOOGLE_MEDICAL_CALENDAR_ID || '').trim()
+
+const CBC_CALENDAR_ID =
+  (import.meta.env.VITE_GOOGLE_CBC_CALENDAR_ID || '').trim()
+
+const FAMILY_CALENDAR_ID =
+  (import.meta.env.VITE_GOOGLE_FAMILY_CALENDAR_ID || '').trim()
+
+const COMMON_GROUNDS_CALENDAR_ID =
+  (import.meta.env.VITE_GOOGLE_COMMON_GROUNDS_CALENDAR_ID || '').trim()
+
+const TYT_2026_SPRING_CALENDAR_ID =
+  (import.meta.env.VITE_GOOGLE_TYT_2026_SPRING_CALENDAR_ID || '').trim()
+
 const MEREDITH_MANGOLD_CALENDAR_ID =
-  import.meta.env.VITE_GOOGLE_MEREDITH_MANGOLD_CALENDAR_ID || ''
+  (import.meta.env.VITE_GOOGLE_MEREDITH_MANGOLD_CALENDAR_ID || '').trim()
 
 const GOOGLE_PROVIDER_TOKEN_KEY = 'spoonflow_google_provider_token'
 const SUGGESTIONS_KEY = 'spoonflow_contact_suggestions'
