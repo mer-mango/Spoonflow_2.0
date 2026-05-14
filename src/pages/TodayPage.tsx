@@ -510,6 +510,17 @@ function TaskWidgetRow({
 
   let dueLine = task.due_date ? `Due ${formatDueLabel(task.due_date)}` : 'No due date'
   let dueLineClass = 'text-[10px] font-medium text-[var(--muted)]'
+
+  if (overdue) {
+    dueLine = `Overdue · ${formatDueLabel(task.due_date)}`
+    dueLineClass = 'text-[10px] font-semibold text-[#c9888e]'
+  } else if (dueToday) {
+    dueLine = `Due today · ${formatDueLabel(task.due_date)}`
+    dueLineClass = 'text-[10px] font-semibold text-[#9f6e89]'
+  }
+
+  let dueLine = task.due_date ? `Due ${formatDueLabel(task.due_date)}` : 'No due date'
+  let dueLineClass = 'text-[10px] font-medium text-[var(--muted)]'
   
   if (overdue) {
     dueLine = `Overdue · ${formatDueLabel(task.due_date)}`
@@ -532,6 +543,7 @@ function TaskWidgetRow({
 
         {task.starred && <span className="shrink-0 text-[#f0c040]">★</span>}
       </div>
+            <p className={`mt-0.5 ${dueLineClass}`}>{dueLine}</p>
       <p className={`mt-0.5 ${dueLineClass}`}>{dueLine}</p>
       
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -1142,7 +1154,7 @@ useEffect(() => {
         </button>
       </header>
 
-      <div className="space-y-3 bg-[var(--bg)] p-5">
+      <div className="space-y-3 bg-[var(--bg)] px-6 py-5">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
 
           <WidgetCard
