@@ -518,46 +518,45 @@ export function TasksPage() {
             )}
           </div>
         ) : (
-          <div className="flex gap-3 overflow-x-auto pb-2 max-lg:flex-col lg:items-start">
-            {kanbanColumns.map((column) => (
-              <section
-                key={column.id}
-                className="w-full shrink-0 rounded-xl border-[0.5px] border-[var(--border)] bg-white/70 lg:w-[280px]"
-              >
-                           {(() => {
-              const headerColors = kanbanHeaderClasses(String(column.id))
-            
-              return (
-                <header
-                  className={`mb-2 flex items-center justify-between rounded-[9px] px-3 py-2.5 ${headerColors.header}`}
-                >
-                  <h2 className={`font-['Poppins'] text-[12px] font-semibold ${headerColors.label}`}>
-                    {column.label}
-                  </h2>
-            
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10.5px] font-medium ${headerColors.count}`}
-                  >
-                    {column.tasks.length}
-                  </span>
-                </header>
-              )
-            })()}
-          
-                <div className="space-y-2 px-1 pb-1">
-                  {column.tasks.map((task) => renderTaskCard(task))}
-          
-                  {column.tasks.length === 0 && (
-                    <div className="rounded-[9px] border-[0.5px] border-dashed border-[var(--border)] bg-white p-3 text-center text-[11.5px] text-[#c8c5c0]">
-                      No tasks
-                    </div>
-                  )}
-                </div>
-              </section>
-            ))}
-          </div>
-        )}
-      </div>
+
+            <TasksKanban
+        columns={kanbanColumns}
+        selectedTaskIds={selectedTaskIds}
+        onSelectTask={toggleTaskSelection}
+        getContactName={(contactId) =>
+          contactId ? contactById.get(contactId) ?? null : null
+        }
+        onContactClick={(contactId) => {
+          navigate(`/contacts/${contactId}`)
+        }}
+        onEditTask={handleOpenTask}
+        onArchiveTask={async (task) => {
+          const { error } = await archiveTask(task.id)
+      
+          if (error) {
+            notify(`Task archive failed: ${error.message}`)
+            return
+          }
+      
+          notify('Task archived')
+        }}
+        onQuickUpdateTask={async (task, patch) => {
+          const { error } = await updateTask(task.id, patch)
+      
+          if (error) {
+            notify(`Task update failed: ${error.message}`)
+          }
+        }}
+        onStarTask={async (task) => {
+          const { error } = await updateTask(task.id, {
+            starred: !task.starred,
+          })
+      
+          if (error) {
+            notify(`Task update failed: ${error.message}`)
+          }
+        }}
+      />
 
       <TaskModal
         open={Boolean(selectedTask)}
