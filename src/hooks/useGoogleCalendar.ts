@@ -113,6 +113,7 @@ export type CalendarEvent = {
   organizer?: CalendarPerson
   startTime: string
   endTime: string
+  meetingLink?: string | null
 }
 
 export type EnrichedEvent = CalendarEvent & {
@@ -185,6 +186,54 @@ function getSavedGoogleProviderToken() {
 
 function saveGoogleProviderToken(token: string) {
   localStorage.setItem(GOOGLE_PROVIDER_TOKEN_KEY, token)
+}
+
+function meetingLinkFromText(value?: string | null) {
+  if (!value) return null
+
+  const urls = value.match(/https?:\/\/[^\s<>"')\]]+/gi) ?? []
+
+  const meetingUrl = urls.find((url) => {
+    const normalized = url.toLowerCase()
+
+    return (
+      normalized.includes('zoom.us/') ||
+      normalized.includes('meet.google.com/') ||
+      normalized.includes('teams.microsoft.com/') ||
+      normalized.includes('teams.live.com/') ||
+      normalized.includes('webex.com/') ||
+      normalized.includes('chime.aws/') ||
+      normalized.includes('gotomeeting.com/') ||
+      normalized.includes('whereby.com/')
+    )
+  })
+
+  return meetingUrl?.replace(/[.,;!?]+$/, '') ?? null
+}
+
+function extractMeetingLink(event: {
+  hangoutLink?: string
+  conferenceData?: {
+    entryPoints?: Array<{
+      entryPointType?: string
+      uri?: string
+    }>
+  }
+  location?: string
+  description?: string
+}) {
+  const videoConferenceLink =
+    event.conferenceData?.entryPoints?.find(
+      (entryPoint) => entryPoint.entryPointType === 'video' && entryPoint.uri,
+    )?.uri ?? null
+
+  return (
+    videoConferenceLink ||
+    event.hangoutLink ||
+    meetingLinkFromText(event.location) ||
+    meetingLinkFromText(event.description) ||
+    null
+  )
 }
 
 function contactMapByEmail(contacts: Contact[]) {
@@ -436,30 +485,40 @@ async function fetchEventsForCalendar(
   }
 
   const data = (await response.json()) as {
-    items?: Array<{
-      id: string
-      summary?: string
-      start?: { dateTime?: string; date?: string }
-      end?: { dateTime?: string; date?: string }
-      attendees?: { email?: string; displayName?: string }[]
-      organizer?: { email?: string; displayName?: string }
-    }>
-  }
+  items?: Array<{
+    id: string
+    summary?: string
+    description?: string
+    location?: string
+    hangoutLink?: string
+    conferenceData?: {
+      entryPoints?: Array<{
+        entryPointType?: string
+        uri?: string
+      }>
+    }
+    start?: { dateTime?: string; date?: string }
+    end?: { dateTime?: string; date?: string }
+    attendees?: { email?: string; displayName?: string }[]
+    organizer?: { email?: string; displayName?: string }
+  }>
+}
 
   return (data.items ?? [])
     .filter((event) => event.start?.dateTime || event.start?.date)
     .map((event) => ({
-      id: `${calendarId}-${event.id}`,
-      title: event.summary || 'Untitled event',
-      calendarId,
-      calendarLabel: getCalendarLabel(calendarId),
-      color: getCalendarColor(calendarId),
-      attendees: event.attendees ?? [],
-      organizer: event.organizer,
-      startTime: event.start?.dateTime ?? `${event.start?.date}T00:00:00`,
-      endTime: event.end?.dateTime ?? `${event.end?.date ?? event.start?.date}T23:59:59`,
-    }))
-}
+    id: `${calendarId}-${event.id}`,
+    title: event.summary || 'Untitled event',
+    calendarId,
+    calendarLabel: getCalendarLabel(calendarId),
+    color: getCalendarColor(calendarId),
+    attendees: event.attendees ?? [],
+    organizer: event.organizer,
+    startTime: event.start?.dateTime ?? `${event.start?.date}T00:00:00`,
+    endTime: event.end?.dateTime ?? `${event.end?.date ?? event.start?.date}T23:59:59`,
+    meetingLink: extractMeetingLink(event),
+  }))
+  }
 
 async function fetchGoogleCalendarEvents(accessToken?: string | null): Promise<CalendarEvent[]> {
   if (!accessToken) {
