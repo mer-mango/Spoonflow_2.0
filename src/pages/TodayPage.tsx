@@ -153,6 +153,12 @@ function calendarTypeForEvent(calendarId?: string | null): TimelineActivity['typ
   return 'meeting'
 }
 
+function isBufferActivityTitle(title: string) {
+  return ['mtg prep', 'mtg notes', 'travel time', 'appt prep', 'appt notes'].includes(
+    title.toLowerCase(),
+  )
+}
+
 function dateKeyFromDateValue(value?: string | null) {
   if (!value) return null
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
@@ -835,9 +841,11 @@ function TodayTimeline({
 
                   <div className="flex w-9 shrink-0 flex-col items-center">
                     <div
-                      className="flex h-[34px] w-[34px] items-center justify-center rounded-full"
+                      <div
+                       <div
+                    className="flex h-[34px] w-[34px] items-center justify-center rounded-full"
                     style={{
-                      backgroundColor: color,
+                      backgroundColor: isBufferActivityTitle(activity.title) ? '#b9cad8' : color,
                       outline: isCurrent
                         ? `4px solid ${color}33`
                         : activity.isJamieAdded
@@ -845,9 +853,9 @@ function TodayTimeline({
                           : undefined,
                       outlineOffset: isCurrent ? 2 : activity.isJamieAdded ? 1 : undefined,
                     }}
-                    >
-                      <ActivityIcon type={activity.type} />
-                    </div>
+                  >
+                    {!isBufferActivityTitle(activity.title) && <ActivityIcon type={activity.type} />}
+                  </div>
 
                     {!isLast && (
                       <div
@@ -884,9 +892,13 @@ function TodayTimeline({
                           </select>
                      ) : (
                       <div className="flex items-start gap-2">
-                        <p className="min-w-0 flex-1 truncate text-[13px] font-medium leading-snug text-[var(--text)]">
-                          {activity.title}
-                        </p>
+                       <p
+                            className={`min-w-0 flex-1 truncate text-[13px] leading-snug text-[var(--text)] ${
+                              isBufferActivityTitle(activity.title) ? 'font-normal' : 'font-medium'
+                            }`}
+                          >
+                            {activity.title}
+                          </p>
                     
                       </div>
                     )}
