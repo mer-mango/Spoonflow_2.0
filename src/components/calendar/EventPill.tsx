@@ -6,6 +6,9 @@ export type CalendarItem = {
   calendarId?: string
   calendarLabel?: string
   color?: string
+  contactId?: string | null
+  contactName?: string | null
+  meetingLink?: string | null
 }
 
 function timeLabel(iso: string) {
