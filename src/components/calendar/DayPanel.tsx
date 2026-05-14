@@ -20,6 +20,19 @@ function timeLabel(iso: string) {
   })
 }
 
+function durationLabel(startIso: string, endIso: string) {
+  const start = new Date(startIso).getTime()
+  const end = new Date(endIso).getTime()
+  const minutes = Math.max(0, Math.round((end - start) / 60000))
+
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+
+  if (hours && mins) return `${hours}h ${mins}m`
+  if (hours) return `${hours}h`
+  return `${mins}m`
+}
+
 function formatPanelDate(dateKey: string) {
   return dateFromLocalKey(dateKey).toLocaleDateString([], {
     weekday: 'long',
@@ -110,7 +123,7 @@ export function DayPanel({
                     </div>
 
                     <p className="mt-1 text-xs text-[var(--muted)]">
-                      {timeLabel(event.startTime)} – {timeLabel(event.endTime)}
+                      {timeLabel(event.startTime)} ({durationLabel(event.startTime, event.endTime)})
                     </p>
 
                     {event.contactId && contactName && (
