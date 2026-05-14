@@ -162,18 +162,6 @@ function isBufferActivityTitle(title: string) {
   )
 }
 
-function bufferCircleColor(type: TimelineActivity['type']) {
-  if (type === 'medical') return '#e7c8cb'
-  if (type === 'virtual') return '#ead7c3'
-  return '#b9cad8'
-}
-
-function bufferLineColor(type: TimelineActivity['type']) {
-  if (type === 'medical') return '#e7c8cb66'
-  if (type === 'virtual') return '#ead7c366'
-  return '#b9cad866'
-}
-
 function dateKeyFromDateValue(value?: string | null) {
   if (!value) return null
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
@@ -882,10 +870,20 @@ function TodayTimeline({
             />
 
                   <div className="flex w-9 shrink-0 flex-col items-center">
-                    <div
-                      className="flex h-[34px] w-[34px] items-center justify-center rounded-full"
-                      style={{
-                      backgroundColor: isBufferActivityTitle(activity.title) ? bufferCircleColor(activity.type) : color,
+                  {isBufferActivityTitle(activity.title) ? (
+                  <div
+                    className="mt-[10px] h-[14px] w-[14px] rounded-full"
+                    style={{
+                      backgroundColor: color,
+                      outline: `3px solid ${color}22`,
+                      outlineOffset: 1,
+                    }}
+                  />
+                ) : (
+                  <div
+                    className="flex h-[34px] w-[34px] items-center justify-center rounded-full"
+                    style={{
+                      backgroundColor: color,
                       outline: isCurrent
                         ? `4px solid ${color}33`
                         : activity.isJamieAdded
@@ -894,17 +892,14 @@ function TodayTimeline({
                       outlineOffset: isCurrent ? 2 : activity.isJamieAdded ? 1 : undefined,
                     }}
                   >
-                    {!isBufferActivityTitle(activity.title) && <ActivityIcon type={activity.type} />}
+                    <ActivityIcon type={activity.type} />
                   </div>
+                )}
 
                     {!isLast && (
                     <div
                       className="min-h-5 w-[2px] flex-1"
-                      style={{
-                        backgroundColor: isBufferActivityTitle(activity.title)
-                          ? bufferLineColor(activity.type)
-                          : `${color}28`,
-                      }}
+                      style={{ backgroundColor: `${color}28` }}
                     />
                   )}
                      </div>
@@ -936,13 +931,15 @@ function TodayTimeline({
                           </select>
                      ) : (
                       <div className="flex items-start gap-2">
-                       <p
-                            className={`min-w-0 flex-1 truncate text-[13px] leading-snug text-[var(--text)] ${
-                              isBufferActivityTitle(activity.title) ? 'font-normal' : 'font-medium'
-                            }`}
-                          >
-                            {activity.title}
-                          </p>
+                      <p
+                        className={`min-w-0 flex-1 truncate leading-snug text-[var(--text)] ${
+                          isBufferActivityTitle(activity.title)
+                            ? 'text-[12px] font-normal'
+                            : 'text-[14px] font-semibold'
+                        }`}
+                      >
+                        {activity.title}
+                      </p>
                     
                       </div>
                     )}
