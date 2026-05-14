@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { DayPanel } from '../components/calendar/DayPanel'
 import { ListView } from '../components/calendar/ListView'
 import { MonthGrid } from '../components/calendar/MonthGrid'
@@ -22,6 +23,7 @@ function addMonths(date: Date, delta: number) {
 }
 
 export function CalendarPage() {
+  const navigate = useNavigate()
   const { enrichedCalendarEvents, isLoading, syncCalendar } = useGoogleCalendar()
   const [view, setView] = useState<'month' | 'list'>('month')
   const [currentMonth, setCurrentMonth] = useState(() => new Date())
@@ -37,6 +39,8 @@ export function CalendarPage() {
         calendarId: event.calendarId,
         color: event.color,
         calendarLabel: event.calendarLabel,
+        contactId: event.contactDetails?.id ?? null,
+        meetingLink: event.meetingLink ?? null,
       })),
     [enrichedCalendarEvents],
   )
@@ -148,7 +152,13 @@ export function CalendarPage() {
             />
           </div>
 
-          <DayPanel dateKey={selectedDateKey} events={selectedDayEvents} />
+          <DayPanel
+              dateKey={selectedDateKey}
+              events={selectedDayEvents}
+              onOpenContactInteractions={(contactId) =>
+                navigate(`/contacts/${contactId}?tab=interactions`)
+              }
+            />
         </div>
       )}
     </div>
