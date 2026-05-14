@@ -1433,7 +1433,7 @@ export function ContactModal({
 
     void onTasksChanged?.()
   }}
-  onToggleTask={async (task) => {
+    onToggleTask={async (task) => {
     const { error } = await updateTask(task.id, {
       status: task.status === 'done' ? 'toDo' : 'done',
     })
@@ -1445,5 +1445,7 @@ export function ContactModal({
 
     void onTasksChanged?.()
   }}
-/>
+      />
+    </>
+  )
 }
