@@ -906,12 +906,12 @@ function TodayTimeline({
                             </span>
                           </div>
                         ) : (
-                        </>
-                          <p className="mt-1 text-[11px] text-[var(--muted)]">
-                            {durationLabel(activity.durationMinutes)} · ends {displayTimeLabel(activity.end)}
-                            {activity.isJamieAdded ? ' · from calendar' : ''}
-                          </p>
-                
+                          <>
+                            <p className="mt-1 text-[11px] text-[var(--muted)]">
+                              {durationLabel(activity.durationMinutes)} · ends {displayTimeLabel(activity.end)}
+                              {activity.isJamieAdded ? ' · from calendar' : ''}
+                            </p>
+
                             {activity.contactId && activity.contactName && (
                               <button
                                 type="button"
