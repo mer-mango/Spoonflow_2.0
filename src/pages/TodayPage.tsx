@@ -888,19 +888,6 @@ function TodayTimeline({
                           {activity.title}
                         </p>
                     
-                        {activity.meetingLink && (
-                          <a
-                            href={activity.meetingLink}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(event) => event.stopPropagation()}
-                            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#f5f3f0] text-[var(--muted)] transition hover:bg-[#ece8e2] hover:text-[var(--text)]"
-                            title="Open meeting link"
-                            aria-label="Open meeting link"
-                          >
-                            <MeetingLinkIcon />
-                          </a>
-                        )}
                       </div>
                     )}
                         {hasOverlap && (
@@ -939,19 +926,36 @@ function TodayTimeline({
                           <>
                             <p className="mt-1 text-[11px] text-[var(--muted)]">
                               {durationLabel(activity.durationMinutes)} · ends {displayTimeLabel(activity.end)}
-                              {activity.isJamieAdded ? ' · from calendar' : ''}
                             </p>
 
-                            {activity.contactId && activity.contactName && (
-                              <button
-                                type="button"
-                                onClick={() => onOpenContactInteractions(activity.contactId!)}
-                                className="mt-1.5 inline-flex items-center rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92] transition hover:bg-[rgba(139,165,168,0.24)] hover:text-[#54777a]"
-                                title="Open contact interactions"
-                              >
-                                {activity.contactName}
-                              </button>
-                            )}
+                            {(activity.contactId && activity.contactName) || activity.meetingLink ? (
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                              {activity.contactId && activity.contactName && (
+                                <button
+                                  type="button"
+                                  onClick={() => onOpenContactInteractions(activity.contactId!)}
+                                  className="inline-flex items-center rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92] transition hover:bg-[rgba(139,165,168,0.24)] hover:text-[#54777a]"
+                                  title="Open contact interactions"
+                                >
+                                  {activity.contactName}
+                                </button>
+                              )}
+
+                              {activity.meetingLink && (
+                                <a
+                                  href={activity.meetingLink}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={(event) => event.stopPropagation()}
+                                  className="inline-flex h-[21px] w-[21px] items-center justify-center rounded-full bg-[#f5f3f0] text-[var(--muted)] transition hover:bg-[#ece8e2] hover:text-[var(--text)]"
+                                  title="Open meeting link"
+                                  aria-label="Open meeting link"
+                                >
+                                  <MeetingLinkIcon />
+                                </a>
+                              )}
+                            </div>
+                          ) : null}
                           </>
                         )}
                       </div>
