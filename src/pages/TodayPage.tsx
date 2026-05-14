@@ -23,6 +23,8 @@ type TimelineDisplayItem = {
   durationMinutes: number
   isManual: boolean
   isJamieAdded?: boolean
+  contactId?: string | null
+  contactName?: string | null
 }
 
 const activityColors: Record<string, string> = {
@@ -723,12 +725,14 @@ function TodayTimeline({
   onDeleteManualActivity,
   onUpdateManualActivity,
   onAddActivity,
+  onOpenContactInteractions,
 }: {
   activities: TimelineDisplayItem[]
   nowMinutes: number
   onDeleteManualActivity: (id: string) => void
   onUpdateManualActivity: (id: string, patch: Partial<TimelineActivity>) => void
   onAddActivity: (startTime?: string) => void
+  onOpenContactInteractions: (contactId: string) => void
 }) {
   const dayStart = 8 * 60
   const dayEnd = 21 * 60
@@ -906,6 +910,17 @@ function TodayTimeline({
                             {durationLabel(activity.durationMinutes)} · ends {displayTimeLabel(activity.end)}
                             {activity.isJamieAdded ? ' · from calendar' : ''}
                           </p>
+                            {activity.contactId && activity.contactName && (
+                              <button
+                                type="button"
+                                onClick={() => onOpenContactInteractions(activity.contactId!)}
+                                className="mt-1.5 inline-flex items-center rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92] transition hover:bg-[rgba(139,165,168,0.24)] hover:text-[#54777a]"
+                                title="Open contact interactions"
+                              >
+                                {activity.contactName}
+                              </button>
+                            )}
+                      
                         )}
                       </div>
 
@@ -1098,8 +1113,20 @@ useEffect(() => {
     [contacts, todayKey],
   )
 
-  const timelineActivities = useMemo<TimelineDisplayItem[]>(() => {
-    const calendarItems: TimelineDisplayItem[] = meetingActivities.map((activity) => ({
+ const timelineActivities = useMemo<TimelineDisplayItem[]>(() => {
+  const contactIdByTimelineMeetingId = new Map(
+    enrichedCalendarEvents
+      .filter((event) => localDateKeyFromIso(event.startTime) === todayKey)
+      .map((event) => [
+        `meeting-${event.id}-${event.startTime}`,
+        event.contactDetails?.id ?? null,
+      ]),
+  )
+
+  const calendarItems: TimelineDisplayItem[] = meetingActivities.map((activity) => {
+    const contactId = contactIdByTimelineMeetingId.get(activity.id) ?? null
+
+    return {
       id: activity.id,
       type: activity.type,
       title: activity.title,
@@ -1108,7 +1135,10 @@ useEffect(() => {
       durationMinutes: durationFromActivity(activity),
       isManual: false,
       isJamieAdded: activity.isJamieAdded,
-    }))
+      contactId,
+      contactName: contactId ? contactById.get(contactId) ?? null : null,
+    }
+  })
 
     const manualItems: TimelineDisplayItem[] = manualActivities.map((activity) => ({
       id: activity.id,
@@ -1124,7 +1154,7 @@ useEffect(() => {
     return [...calendarItems, ...manualItems].sort(
       (a, b) => minutesFromTimeLabel(a.start) - minutesFromTimeLabel(b.start),
     )
-  }, [meetingActivities, manualActivities])
+  }, [meetingActivities, manualActivities, enrichedCalendarEvents, todayKey, contactById])
 
   return (
     <section className="overflow-hidden rounded-xl border-[0.5px] border-[var(--border)] bg-white">      
@@ -1274,6 +1304,9 @@ useEffect(() => {
           }
           onUpdateManualActivity={updateManualActivity}
           onAddActivity={openAddActivity}
+          onOpenContactInteractions={(contactId) =>
+            navigate(`/contacts/${contactId}?tab=interactions`)
+          }
         />
       </div>
 
