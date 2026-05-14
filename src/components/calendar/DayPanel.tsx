@@ -124,7 +124,7 @@ export function DayPanel({
 
   return (
     <aside className="w-full rounded-2xl border border-[var(--border)] bg-white p-4 lg:w-[300px]">
-      <h2 className="font-serif text-xl text-[var(--text)]">
+      <h2 className="font-poppins text-xl text-[var(--text)]">
         {formatPanelDate(dateKey)}
       </h2>
 
