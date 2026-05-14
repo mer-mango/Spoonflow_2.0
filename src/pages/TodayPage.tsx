@@ -306,19 +306,6 @@ function ActivityIcon({ type }: { type: string }) {
       </svg>
     )
   }
-  function MeetingLinkIcon() {
-    return (
-      <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none">
-        <path
-          d="M5.4 8.6l3.2-3.2M4.7 10H3.9A2.4 2.4 0 0 1 2.2 5.9l1.2-1.2A2.4 2.4 0 0 1 6.8 8M9.3 4h.8a2.4 2.4 0 0 1 1.7 4.1l-1.2 1.2A2.4 2.4 0 0 1 7.2 6"
-          stroke="currentColor"
-          strokeWidth="1.3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    )
-  }
 
   if (type === 'task' || type === 'tasks') {
     return (
@@ -428,6 +415,20 @@ function ActivityIcon({ type }: { type: string }) {
     </svg>
   )
 }
+
+   function MeetingLinkIcon() {
+    return (
+      <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none">
+        <path
+          d="M5.4 8.6l3.2-3.2M4.7 10H3.9A2.4 2.4 0 0 1 2.2 5.9l1.2-1.2A2.4 2.4 0 0 1 6.8 8M9.3 4h.8a2.4 2.4 0 0 1 1.7 4.1l-1.2 1.2A2.4 2.4 0 0 1 7.2 6"
+          stroke="currentColor"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    )
+  }
 
 function WidgetCard({
   id,
