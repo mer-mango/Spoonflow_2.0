@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { TaskCard } from '../components/shared/TaskCard'
+import { TasksKanban } from '../components/tasks/TasksKanban'
 import { TaskModal } from '../components/shared/TaskModal'
 import { useToast } from '../components/shared/Toast'
 import { useContacts } from '../hooks/useContacts'
@@ -45,45 +46,6 @@ const statusColumns: Array<{ id: TaskStatus; label: string }> = [
   { id: 'done', label: 'Done' },
 ]
 
-function kanbanHeaderClasses(columnId: string) {
-  if (columnId === 'toDo') {
-    return {
-      header: 'bg-[rgba(201,136,142,0.13)]',
-      label: 'text-[#b66b73]',
-      count: 'bg-[rgba(201,136,142,0.18)] text-[#b66b73]',
-    }
-  }
-
-  if (columnId === 'inProgress') {
-    return {
-      header: 'bg-[rgba(212,167,122,0.16)]',
-      label: 'text-[#b57943]',
-      count: 'bg-[rgba(212,167,122,0.22)] text-[#b57943]',
-    }
-  }
-
-  if (columnId === 'awaitingReply') {
-    return {
-      header: 'bg-[#f4efe3]',
-      label: 'text-[#9a7b3f]',
-      count: 'bg-[#eadfbd] text-[#9a7b3f]',
-    }
-  }
-
-  if (columnId === 'done') {
-    return {
-      header: 'bg-[rgba(143,167,144,0.16)]',
-      label: 'text-[#6f8d70]',
-      count: 'bg-[rgba(143,167,144,0.22)] text-[#6f8d70]',
-    }
-  }
-
-  return {
-    header: 'bg-[rgba(193,152,173,0.12)]',
-    label: 'text-[#9f6e89]',
-    count: 'bg-[rgba(193,152,173,0.18)] text-[#9f6e89]',
-  }
-}
 const taskTypeColumns = [
   { id: 'admin', label: 'Admin' },
   { id: 'outreach', label: 'Outreach' },
