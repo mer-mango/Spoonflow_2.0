@@ -1324,7 +1324,9 @@ useEffect(() => {
           <WidgetCard
             id="meetings"
             label="Meetings"
-            count={meetingActivities.length}
+            count={meetingActivities.filter(
+            (activity) => !isBufferActivityTitle(activity.title),
+          ).length}
             color="#6484a1"
             activeWidget={activeWidget}
             setActiveWidget={setActiveWidget}
