@@ -478,67 +478,7 @@ function EmptyWidgetRow({ label }: { label: string }) {
   return <div className="px-3 py-3 text-[11px] text-[var(--muted)]">{label}</div>
 }
 
-function TaskWidgetRow({
-  task,
-  todayKey,
-  contactName,
-  onClick,
-  onQuickUpdate,
-}: {
-  task: Task
-  todayKey: string
-  contactName?: string | null
-  onClick: () => void
-  onQuickUpdate: (task: Task, patch: Partial<Task>) => Promise<void> | void
-}) {
-  const overdue = isOverdueDate(task.due_date, todayKey)
-  const dueToday = isTodayDate(task.due_date, todayKey)
-  const typeLabel = taskTypeLabel(task.task_type)
 
-  let dueChip = formatDueLabel(task.due_date)
-  let chipClass = 'bg-[#f5f2ef] text-[var(--muted)]'
-
-  if (overdue) {
-    dueChip = `overdue · ${formatDueLabel(task.due_date)}`
-    chipClass = 'bg-[rgba(201,136,142,0.13)] text-[#c9888e]'
-  } else if (dueToday) {
-    dueChip = 'due today'
-    chipClass = 'bg-[rgba(193,152,173,0.14)] text-[#9f6e89]'
-  } else if (!task.due_date) {
-    dueChip = 'no due date'
-  }
-
-  if (overdue) {
-    dueLine = `Overdue · ${formatDueLabel(task.due_date)}`
-    dueLineClass = 'text-[10px] font-semibold text-[#c9888e]'
-  } else if (dueToday) {
-    dueLine = `Due today · ${formatDueLabel(task.due_date)}`
-    dueLineClass = 'text-[10px] font-semibold text-[#9f6e89]'
-  }
-
-  let dueChip = formatDueLabel(task.due_date)
-  let chipClass = 'bg-[#f5f2ef] text-[var(--muted)]'
-
-  if (overdue) {
-    dueChip = `overdue · ${formatDueLabel(task.due_date)}`
-    chipClass = 'bg-[rgba(201,136,142,0.13)] text-[#c9888e]'
-  } else if (dueToday) {
-    dueChip = 'due today'
-    chipClass = 'bg-[rgba(193,152,173,0.14)] text-[#9f6e89]'
-  } else if (!task.due_date) {
-    dueChip = 'no due date'
-  }
-
-  let dueLine = task.due_date ? `Due ${formatDueLabel(task.due_date)}` : 'No due date'
-  let dueLineClass = 'text-[10px] font-medium text-[var(--muted)]'
-
-  if (overdue) {
-    dueLine = `Overdue · ${formatDueLabel(task.due_date)}`
-    dueLineClass = 'text-[10px] font-semibold text-[#c9888e]'
-  } else if (dueToday) {
-    dueLine = `Due today · ${formatDueLabel(task.due_date)}`
-    dueLineClass = 'text-[10px] font-semibold text-[#9f6e89]'
-  }
   
 function TimelineGap({
   minutes,
