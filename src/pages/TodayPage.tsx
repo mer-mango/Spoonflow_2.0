@@ -869,17 +869,17 @@ function TodayTimeline({
                 onUpdateStart={updateManualStart}
             />
 
-              <div className="relative flex w-9 shrink-0 flex-col items-center">
+              <div className="relative flex w-9 shrink-0 self-stretch flex-col items-center">
                 {index > 0 && (
                   <div
-                    className="absolute left-1/2 top-0 h-[17px] w-[1.5px] -translate-x-1/2 bg-[var(--muted)]"
+                    className="absolute left-1/2 top-0 h-[17px] w-px -translate-x-1/2 bg-[var(--muted)] opacity-60"
                     aria-hidden="true"
                   />
                 )}
               
                 {!isLast && (
                   <div
-                    className="absolute left-1/2 top-[17px] bottom-0 w-[1.5px] -translate-x-1/2 bg-[var(--muted)]"
+                    className="absolute left-1/2 top-[17px] bottom-0 w-px -translate-x-1/2 bg-[var(--muted)] opacity-60"
                     aria-hidden="true"
                   />
                 )}
