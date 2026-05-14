@@ -316,11 +316,38 @@ function dedupeActivities(activities: TimelineActivity[]) {
 }
 
 function ActivityIcon({ type }: { type: string }) {
-  if (type === 'meeting' || type === 'medical' || type === 'virtual') {
+  if (type === 'meeting') {
     return (
       <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none">
         <rect x="1.5" y="2" width="11" height="10" rx="1.5" stroke="white" strokeWidth="1.4" />
         <path d="M1.5 5.5h11M4.5 1v2M9.5 1v2" stroke="white" strokeWidth="1.3" strokeLinecap="round" />
+      </svg>
+    )
+  }
+
+  if (type === 'medical' || type === 'virtual') {
+    return (
+      <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none">
+        <path
+          d="M4 2.5v3a3 3 0 0 0 6 0v-3"
+          stroke="white"
+          strokeWidth="1.35"
+          strokeLinecap="round"
+        />
+        <path
+          d="M2.8 2.4h2.4M8.8 2.4h2.4"
+          stroke="white"
+          strokeWidth="1.35"
+          strokeLinecap="round"
+        />
+        <path
+          d="M7 8.5v1.2a2 2 0 1 0 2-2"
+          stroke="white"
+          strokeWidth="1.35"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle cx="11" cy="7.7" r="1" stroke="white" strokeWidth="1.2" />
       </svg>
     )
   }
