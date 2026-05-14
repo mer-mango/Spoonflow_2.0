@@ -1331,31 +1331,51 @@ useEffect(() => {
             activeWidget={activeWidget}
             setActiveWidget={setActiveWidget}
           >
-            {meetingActivities.length === 0 ? (
-              <EmptyWidgetRow label="No meetings today." />
-            ) : (
-              meetingActivities.slice(0, 6).map((meeting) => (
-                <button
-                  key={meeting.id}
-                  type="button"
-                  className="block w-full border-b border-[rgba(44,44,42,0.06)] px-3 py-2 text-left transition hover:bg-[#f8fbfd] last:border-b-0"
-                >
-                  <p className="truncate text-[11.5px] font-semibold text-[var(--meeting)]">
-                    {meeting.title}
-                  </p>
-          
-                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <span className="rounded bg-[#f5f3f0] px-1.5 py-0.5 text-[10px] font-medium text-[var(--muted)]">
-                      {displayTimeLabel(meeting.start)}
-                    </span>
-          
-                    <span className="rounded bg-[rgba(100,132,161,0.14)] px-1.5 py-0.5 text-[10px] font-medium text-[#6484a1]">
-                      {displayTimeLabel(meeting.end)}
-                    </span>
-                  </div>
-                </button>
-              ))
-            )}
+
+            {meetingActivities.filter(
+  (activity) => !isBufferActivityTitle(activity.title),
+).length === 0 ? (
+  <EmptyWidgetRow label="No meetings today." />
+) : (
+  meetingActivities
+    .filter((activity) => !isBufferActivityTitle(activity.title))
+    .slice(0, 6)
+    .map((meeting) => {
+      const meetingColor = activityColors[meeting.type] ?? activityColors.meeting
+
+      return (
+        <button
+          key={meeting.id}
+          type="button"
+          className="block w-full border-b border-[rgba(44,44,42,0.06)] px-3 py-2 text-left transition hover:bg-[#f8fbfd] last:border-b-0"
+        >
+          <p
+            className="truncate text-[11.5px] font-semibold"
+            style={{ color: meetingColor }}
+          >
+            {meeting.title}
+          </p>
+
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <span className="rounded bg-[#f5f3f0] px-1.5 py-0.5 text-[10px] font-medium text-[var(--muted)]">
+              {displayTimeLabel(meeting.start)}
+            </span>
+
+            <span
+              className="rounded px-1.5 py-0.5 text-[10px] font-medium"
+              style={{
+                backgroundColor: `${meetingColor}22`,
+                color: meetingColor,
+              }}
+            >
+              {displayTimeLabel(meeting.end)}
+            </span>
+          </div>
+        </button>
+      )
+    })
+)}
+            
           </WidgetCard>
           
           <WidgetCard
