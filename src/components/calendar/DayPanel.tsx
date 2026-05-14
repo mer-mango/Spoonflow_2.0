@@ -1,8 +1,10 @@
 import type { CalendarItem } from './EventPill'
+import { useContacts } from '../../hooks/useContacts'
 
 type DayPanelProps = {
   dateKey: string
   events: CalendarItem[]
+  onOpenContactInteractions: (contactId: string) => void
 }
 
 function dateFromLocalKey(dateKey: string) {
@@ -26,7 +28,31 @@ function formatPanelDate(dateKey: string) {
   })
 }
 
-export function DayPanel({ dateKey, events }: DayPanelProps) {
+function LinkIcon() {
+  return (
+    <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none">
+      <path
+        d="M5.4 8.6l3.2-3.2M4.7 10H3.9A2.4 2.4 0 0 1 2.2 5.9l1.2-1.2A2.4 2.4 0 0 1 6.8 8M9.3 4h.8a2.4 2.4 0 0 1 1.7 4.1l-1.2 1.2A2.4 2.4 0 0 1 7.2 6"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function DayPanel({
+  dateKey,
+  events,
+  onOpenContactInteractions,
+}: DayPanelProps) {
+  const { contacts } = useContacts()
+
+  const contactNameById = new Map(
+    contacts.map((contact) => [contact.id, contact.name]),
+  )
+
   const sortedEvents = [...events].sort(
     (a, b) => +new Date(a.startTime) - +new Date(b.startTime),
   )
@@ -47,6 +73,9 @@ export function DayPanel({ dateKey, events }: DayPanelProps) {
         ) : (
           sortedEvents.map((event) => {
             const color = event.color ?? '#6484a1'
+            const contactName = event.contactId
+              ? contactNameById.get(event.contactId) ?? null
+              : null
 
             return (
               <article
@@ -60,15 +89,41 @@ export function DayPanel({ dateKey, events }: DayPanelProps) {
                     style={{ backgroundColor: color }}
                   />
 
-                  <div className="min-w-0">
-                    <h3 className="truncate text-sm font-semibold text-[var(--text)]">
-                      {event.title}
-                    </h3>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="truncate text-sm font-semibold text-[var(--text)]">
+                        {event.title}
+                      </h3>
+
+                      {event.meetingLink && (
+                        <a
+                          href={event.meetingLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#f5f3f0] text-[var(--muted)] transition hover:bg-[#ece8e2] hover:text-[var(--text)]"
+                          title="Open meeting link"
+                          aria-label="Open meeting link"
+                        >
+                          <LinkIcon />
+                        </a>
+                      )}
+                    </div>
 
                     <p className="mt-1 text-xs text-[var(--muted)]">
                       {timeLabel(event.startTime)} – {timeLabel(event.endTime)}
                       {event.calendarLabel ? ` · ${event.calendarLabel}` : ''}
                     </p>
+
+                    {event.contactId && contactName && (
+                      <button
+                        type="button"
+                        onClick={() => onOpenContactInteractions(event.contactId!)}
+                        className="mt-2 inline-flex items-center rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92] transition hover:bg-[rgba(139,165,168,0.24)] hover:text-[#54777a]"
+                        title="Open contact interactions"
+                      >
+                        {contactName}
+                      </button>
+                    )}
                   </div>
                 </div>
               </article>
