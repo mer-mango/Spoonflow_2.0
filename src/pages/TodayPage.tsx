@@ -1143,7 +1143,7 @@ useEffect(() => {
         </button>
       </header>
 
-      <div className="space-y-3 bg-[var(--bg)] px-6 py-5">
+      <div className="space-y-3 bg-[var(--bg)] px-0 py-5">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
 
           <WidgetCard
