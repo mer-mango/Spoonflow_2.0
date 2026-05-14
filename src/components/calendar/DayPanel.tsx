@@ -1,6 +1,9 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { CalendarItem } from './EventPill'
+import { TaskModal } from '../shared/TaskModal'
 import { useContacts } from '../../hooks/useContacts'
-import { useTasks } from '../../hooks/useTasks'
+import { useTasks, type Task } from '../../hooks/useTasks'
 
 type DayPanelProps = {
   dateKey: string
@@ -95,8 +98,10 @@ export function DayPanel({
   events,
   onOpenContactInteractions,
 }: DayPanelProps) {
+  const navigate = useNavigate()
   const { contacts } = useContacts()
-  const { tasks } = useTasks()
+  const { tasks, updateTask } = useTasks()
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
 
   const contactNameById = new Map(
     contacts.map((contact) => [contact.id, contact.name]),
@@ -123,149 +128,181 @@ export function DayPanel({
     sortedEvents.length + selectedDayTasks.length + selectedDayNurtures.length
 
   return (
-    <aside className="w-full rounded-2xl border border-[var(--border)] bg-white p-4 lg:w-[300px]">
-      <h2 className="font-serif text-xl text-[var(--text)]">
-        {formatPanelDate(dateKey)}
-      </h2>
+    <>
+      <aside className="w-full rounded-2xl border border-[var(--border)] bg-white p-4 lg:w-[300px]">
+        <h2 className="font-serif text-xl text-[var(--text)]">
+          {formatPanelDate(dateKey)}
+        </h2>
 
-      <p className="mt-1 text-sm text-[var(--muted)]">
-        {totalItems} scheduled {totalItems === 1 ? 'item' : 'items'}
-      </p>
+        <p className="mt-1 text-sm text-[var(--muted)]">
+          {totalItems} scheduled {totalItems === 1 ? 'item' : 'items'}
+        </p>
 
-      <div className="mt-4 space-y-5">
-        {sortedEvents.length > 0 && (
-          <section>
-            <SectionHeader label="Meetings" count={sortedEvents.length} />
+        <div className="mt-4 space-y-5">
+          {sortedEvents.length > 0 && (
+            <section>
+              <SectionHeader label="Meetings" count={sortedEvents.length} />
 
-            <div className="space-y-2">
-              {sortedEvents.map((event) => {
-                const color = event.color ?? '#6484a1'
-                const contactName = event.contactId
-                  ? contactNameById.get(event.contactId) ?? null
-                  : null
+              <div className="space-y-2">
+                {sortedEvents.map((event) => {
+                  const color = event.color ?? '#6484a1'
+                  const contactName = event.contactId
+                    ? contactNameById.get(event.contactId) ?? null
+                    : null
 
-                return (
-                  <article
-                    key={`${event.id}-${event.startTime}`}
-                    className="rounded-xl border border-[var(--border)] bg-white p-3"
-                    style={{ borderLeft: `4px solid ${color}` }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
-                        style={{ backgroundColor: color }}
-                      />
+                  return (
+                    <article
+                      key={`${event.id}-${event.startTime}`}
+                      className="rounded-xl border border-[var(--border)] bg-white p-3"
+                      style={{ borderLeft: `4px solid ${color}` }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
+                          style={{ backgroundColor: color }}
+                        />
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <h4 className="truncate text-sm font-semibold text-[var(--text)]">
-                            {event.title}
-                          </h4>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="truncate text-sm font-semibold text-[var(--text)]">
+                              {event.title}
+                            </h4>
 
-                          {event.meetingLink && (
-                            <a
-                              href={event.meetingLink}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#f5f3f0] text-[var(--muted)] transition hover:bg-[#ece8e2] hover:text-[var(--text)]"
-                              title="Open meeting link"
-                              aria-label="Open meeting link"
+                            {event.meetingLink && (
+                              <a
+                                href={event.meetingLink}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#f5f3f0] text-[var(--muted)] transition hover:bg-[#ece8e2] hover:text-[var(--text)]"
+                                title="Open meeting link"
+                                aria-label="Open meeting link"
+                              >
+                                <LinkIcon />
+                              </a>
+                            )}
+                          </div>
+
+                          <p className="mt-1 text-xs text-[var(--muted)]">
+                            {timeLabel(event.startTime)} (
+                            {durationLabel(event.startTime, event.endTime)})
+                          </p>
+
+                          {event.contactId && contactName && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenContactInteractions(event.contactId!)}
+                              className="mt-2 inline-flex items-center rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92] transition hover:bg-[rgba(139,165,168,0.24)] hover:text-[#54777a]"
+                              title="Open contact interactions"
                             >
-                              <LinkIcon />
-                            </a>
+                              {contactName}
+                            </button>
                           )}
                         </div>
-
-                        <p className="mt-1 text-xs text-[var(--muted)]">
-                          {timeLabel(event.startTime)} ({durationLabel(event.startTime, event.endTime)})
-                        </p>
-
-                        {event.contactId && contactName && (
-                          <button
-                            type="button"
-                            onClick={() => onOpenContactInteractions(event.contactId!)}
-                            className="mt-2 inline-flex items-center rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92] transition hover:bg-[rgba(139,165,168,0.24)] hover:text-[#54777a]"
-                            title="Open contact interactions"
-                          >
-                            {contactName}
-                          </button>
-                        )}
                       </div>
-                    </div>
-                  </article>
-                )
-              })}
-            </div>
-          </section>
-        )}
+                    </article>
+                  )
+                })}
+              </div>
+            </section>
+          )}
 
-        {selectedDayTasks.length > 0 && (
-          <section>
-            <SectionHeader label="Tasks" count={selectedDayTasks.length} />
+          {selectedDayTasks.length > 0 && (
+            <section>
+              <SectionHeader label="Tasks" count={selectedDayTasks.length} />
 
-            <div className="space-y-2">
-              {selectedDayTasks.map((task) => {
-                const contactName = task.contact_id
-                  ? contactNameById.get(task.contact_id) ?? null
-                  : null
+              <div className="space-y-2">
+                {selectedDayTasks.map((task) => {
+                  const contactName = task.contact_id
+                    ? contactNameById.get(task.contact_id) ?? null
+                    : null
 
-                return (
+                  return (
+                    <article
+                      key={task.id}
+                      onClick={() => setSelectedTask(task)}
+                      className="cursor-pointer rounded-xl border border-[var(--border)] bg-white p-3 transition hover:bg-[#fcfafc]"
+                      style={{ borderLeft: '4px solid #c198ad' }}
+                    >
+                      <h4 className="text-sm font-semibold text-[var(--text)]">
+                        {task.title}
+                      </h4>
+
+                      <p className="mt-1 text-xs text-[var(--muted)]">
+                        Due today
+                        {task.estimated_minutes ? ` · ${task.estimated_minutes}m` : ''}
+                      </p>
+
+                      {task.contact_id && contactName && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            navigate(`/contacts/${task.contact_id}`)
+                          }}
+                          className="mt-2 inline-flex items-center rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92] transition hover:bg-[rgba(139,165,168,0.24)] hover:text-[#54777a]"
+                          title="Open contact profile"
+                        >
+                          {contactName}
+                        </button>
+                      )}
+                    </article>
+                  )
+                })}
+              </div>
+            </section>
+          )}
+
+          {selectedDayNurtures.length > 0 && (
+            <section>
+              <SectionHeader label="Nurture" count={selectedDayNurtures.length} />
+
+              <div className="space-y-2">
+                {selectedDayNurtures.map((contact) => (
                   <article
-                    key={task.id}
-                    className="rounded-xl border border-[var(--border)] bg-white p-3"
-                    style={{ borderLeft: '4px solid #c198ad' }}
+                    key={contact.id}
+                    onClick={() => navigate(`/contacts/${contact.id}?tab=nurture`)}
+                    className="cursor-pointer rounded-xl border border-[var(--border)] bg-white p-3 transition hover:bg-[#f8fdf8]"
+                    style={{ borderLeft: '4px solid #8fa790' }}
                   >
-                    <h4 className="text-sm font-semibold text-[var(--text)]">
-                      {task.title}
-                    </h4>
-
-                    <p className="mt-1 text-xs text-[var(--muted)]">
-                      Due today
-                      {task.estimated_minutes ? ` · ${task.estimated_minutes}m` : ''}
+                    <p className="text-xs text-[var(--muted)]">
+                      Nurture follow-up due
                     </p>
 
-                    {contactName && (
-                      <span className="mt-2 inline-flex items-center rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92]">
-                        {contactName}
-                      </span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        navigate(`/contacts/${contact.id}`)
+                      }}
+                      className="mt-2 inline-flex items-center rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92] transition hover:bg-[rgba(139,165,168,0.24)] hover:text-[#54777a]"
+                      title="Open contact profile"
+                    >
+                      {contact.name}
+                    </button>
                   </article>
-                )
-              })}
+                ))}
+              </div>
+            </section>
+          )}
+
+          {totalItems === 0 && (
+            <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg)] p-4 text-sm text-[var(--muted)]">
+              Nothing scheduled for this day.
             </div>
-          </section>
-        )}
+          )}
+        </div>
+      </aside>
 
-        {selectedDayNurtures.length > 0 && (
-          <section>
-            <SectionHeader label="Nurture" count={selectedDayNurtures.length} />
+      <TaskModal
+        open={Boolean(selectedTask)}
+        task={selectedTask}
+        onClose={() => setSelectedTask(null)}
+        onSave={async (id, patch) => {
+          if (!id) return
 
-            <div className="space-y-2">
-              {selectedDayNurtures.map((contact) => (
-                <article
-                  key={contact.id}
-                  className="rounded-xl border border-[var(--border)] bg-white p-3"
-                  style={{ borderLeft: '4px solid #8fa790' }}
-                >
-                  <h4 className="text-sm font-semibold text-[var(--text)]">
-                    {contact.name}
-                  </h4>
-
-                  <p className="mt-1 text-xs text-[var(--muted)]">
-                    Nurture follow-up due
-                  </p>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {totalItems === 0 && (
-          <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg)] p-4 text-sm text-[var(--muted)]">
-            Nothing scheduled for this day.
-          </div>
-        )}
-      </div>
-    </aside>
+          await updateTask(id, patch)
+        }}
+      />
+    </>
   )
 }
