@@ -111,7 +111,6 @@ export function DayPanel({
 
                     <p className="mt-1 text-xs text-[var(--muted)]">
                       {timeLabel(event.startTime)} – {timeLabel(event.endTime)}
-                      {event.calendarLabel ? ` · ${event.calendarLabel}` : ''}
                     </p>
 
                     {event.contactId && contactName && (
