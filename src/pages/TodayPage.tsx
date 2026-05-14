@@ -869,10 +869,24 @@ function TodayTimeline({
                 onUpdateStart={updateManualStart}
             />
 
-                  <div className="flex w-9 shrink-0 flex-col items-center">
-                  {isBufferActivityTitle(activity.title) ? (
+              <div className="relative flex w-9 shrink-0 flex-col items-center">
+                {index > 0 && (
                   <div
-                    className="mt-[10px] h-[14px] w-[14px] rounded-full"
+                    className="absolute left-1/2 top-0 h-[17px] w-[1.5px] -translate-x-1/2 bg-[var(--muted)]"
+                    aria-hidden="true"
+                  />
+                )}
+              
+                {!isLast && (
+                  <div
+                    className="absolute left-1/2 top-[17px] bottom-0 w-[1.5px] -translate-x-1/2 bg-[var(--muted)]"
+                    aria-hidden="true"
+                  />
+                )}
+              
+                {isBufferActivityTitle(activity.title) ? (
+                  <div
+                    className="relative z-10 mt-[10px] h-[14px] w-[14px] rounded-full"
                     style={{
                       backgroundColor: color,
                       outline: `3px solid ${color}22`,
@@ -881,7 +895,7 @@ function TodayTimeline({
                   />
                 ) : (
                   <div
-                    className="flex h-[34px] w-[34px] items-center justify-center rounded-full"
+                    className="relative z-10 flex h-[34px] w-[34px] items-center justify-center rounded-full"
                     style={{
                       backgroundColor: color,
                       outline: isCurrent
@@ -895,15 +909,7 @@ function TodayTimeline({
                     <ActivityIcon type={activity.type} />
                   </div>
                 )}
-
-                    {!isLast && (
-                    <div
-                      className="min-h-5 w-[2px] flex-1"
-                      style={{ backgroundColor: `${color}28` }}
-                    />
-                  )}
-                     </div>
-
+              </div>
                   <div className="min-w-0 flex-1 px-4 pb-5 pt-1">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
