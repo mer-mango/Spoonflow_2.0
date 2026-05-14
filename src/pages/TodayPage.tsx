@@ -159,6 +159,18 @@ function isBufferActivityTitle(title: string) {
   )
 }
 
+function bufferCircleColor(type: TimelineActivity['type']) {
+  if (type === 'medical') return '#e7c8cb'
+  if (type === 'virtual') return '#ead7c3'
+  return '#b9cad8'
+}
+
+function bufferLineColor(type: TimelineActivity['type']) {
+  if (type === 'medical') return '#e7c8cb66'
+  if (type === 'virtual') return '#ead7c366'
+  return '#b9cad866'
+}
+
 function dateKeyFromDateValue(value?: string | null) {
   if (!value) return null
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
@@ -843,7 +855,7 @@ function TodayTimeline({
                     <div
                       className="flex h-[34px] w-[34px] items-center justify-center rounded-full"
                       style={{
-                      backgroundColor: isBufferActivityTitle(activity.title) ? '#b9cad8' : color,
+                      backgroundColor: isBufferActivityTitle(activity.title) ? bufferCircleColor(activity.type) : color,
                       outline: isCurrent
                         ? `4px solid ${color}33`
                         : activity.isJamieAdded
@@ -856,12 +868,16 @@ function TodayTimeline({
                   </div>
 
                     {!isLast && (
-                      <div
-                        className="min-h-5 w-[2px] flex-1"
-                        style={{ backgroundColor: `${color}28` }}
-                      />
-                    )}
-                  </div>
+                    <div
+                      className="min-h-5 w-[2px] flex-1"
+                      style={{
+                        backgroundColor: isBufferActivityTitle(activity.title)
+                          ? bufferLineColor(activity.type)
+                          : `${color}28`,
+                      }}
+                    />
+                  )}
+                     </div>
 
                   <div className="min-w-0 flex-1 px-4 pb-5 pt-1">
                     <div className="flex items-start justify-between gap-3">
