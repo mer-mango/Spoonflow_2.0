@@ -306,6 +306,19 @@ function ActivityIcon({ type }: { type: string }) {
       </svg>
     )
   }
+  function MeetingLinkIcon() {
+    return (
+      <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none">
+        <path
+          d="M5.4 8.6l3.2-3.2M4.7 10H3.9A2.4 2.4 0 0 1 2.2 5.9l1.2-1.2A2.4 2.4 0 0 1 6.8 8M9.3 4h.8a2.4 2.4 0 0 1 1.7 4.1l-1.2 1.2A2.4 2.4 0 0 1 7.2 6"
+          stroke="currentColor"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    )
+  }
 
   if (type === 'task' || type === 'tasks') {
     return (
@@ -868,12 +881,27 @@ function TodayTimeline({
                               </option>
                             ))}
                           </select>
-                        ) : (
-                          <p className="truncate text-[13px] font-medium leading-snug text-[var(--text)]">
-                            {activity.title}
-                          </p>
+                     ) : (
+                      <div className="flex items-start gap-2">
+                        <p className="min-w-0 flex-1 truncate text-[13px] font-medium leading-snug text-[var(--text)]">
+                          {activity.title}
+                        </p>
+                    
+                        {activity.meetingLink && (
+                          <a
+                            href={activity.meetingLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(event) => event.stopPropagation()}
+                            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#f5f3f0] text-[var(--muted)] transition hover:bg-[#ece8e2] hover:text-[var(--text)]"
+                            title="Open meeting link"
+                            aria-label="Open meeting link"
+                          >
+                            <MeetingLinkIcon />
+                          </a>
                         )}
-
+                      </div>
+                    )}
                         {hasOverlap && (
                           <p className="mt-1 text-[11px] font-medium text-[#c9888e]">
                             Overlaps previous activity — adjust start time or duration.
