@@ -503,8 +503,7 @@ export function TasksPage() {
           </button>
         </div>
       )}
-
-      <div className="p-4">
+            <div className="p-4">
         {isLoading ? (
           <p className="text-[12px] text-[var(--muted)]">Loading tasks…</p>
         ) : viewMode === 'list' ? (
@@ -518,45 +517,46 @@ export function TasksPage() {
             )}
           </div>
         ) : (
+          <TasksKanban
+            columns={kanbanColumns}
+            selectedTaskIds={selectedTaskIds}
+            onSelectTask={toggleTaskSelection}
+            getContactName={(contactId) =>
+              contactId ? contactById.get(contactId) ?? null : null
+            }
+            onContactClick={(contactId) => {
+              navigate(`/contacts/${contactId}`)
+            }}
+            onEditTask={handleOpenTask}
+            onArchiveTask={async (task) => {
+              const { error } = await archiveTask(task.id)
 
-            <TasksKanban
-        columns={kanbanColumns}
-        selectedTaskIds={selectedTaskIds}
-        onSelectTask={toggleTaskSelection}
-        getContactName={(contactId) =>
-          contactId ? contactById.get(contactId) ?? null : null
-        }
-        onContactClick={(contactId) => {
-          navigate(`/contacts/${contactId}`)
-        }}
-        onEditTask={handleOpenTask}
-        onArchiveTask={async (task) => {
-          const { error } = await archiveTask(task.id)
-      
-          if (error) {
-            notify(`Task archive failed: ${error.message}`)
-            return
-          }
-      
-          notify('Task archived')
-        }}
-        onQuickUpdateTask={async (task, patch) => {
-          const { error } = await updateTask(task.id, patch)
-      
-          if (error) {
-            notify(`Task update failed: ${error.message}`)
-          }
-        }}
-        onStarTask={async (task) => {
-          const { error } = await updateTask(task.id, {
-            starred: !task.starred,
-          })
-      
-          if (error) {
-            notify(`Task update failed: ${error.message}`)
-          }
-        }}
-      />
+              if (error) {
+                notify(`Task archive failed: ${error.message}`)
+                return
+              }
+
+              notify('Task archived')
+            }}
+            onQuickUpdateTask={async (task, patch) => {
+              const { error } = await updateTask(task.id, patch)
+
+              if (error) {
+                notify(`Task update failed: ${error.message}`)
+              }
+            }}
+            onStarTask={async (task) => {
+              const { error } = await updateTask(task.id, {
+                starred: !task.starred,
+              })
+
+              if (error) {
+                notify(`Task update failed: ${error.message}`)
+              }
+            }}
+          />
+        )}
+      </div>
 
       <TaskModal
         open={Boolean(selectedTask)}
