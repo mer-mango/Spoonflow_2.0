@@ -212,7 +212,7 @@ export function MeetingInteractionModal({
       drafts[item.id] = item.text
     })
     setActionItemDrafts(drafts)
-  }, [interaction, open, actionItems])
+    }, [interaction?.id, open])
 
   const sortedActionItems = useMemo(
     () =>
