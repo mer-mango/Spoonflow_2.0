@@ -163,17 +163,30 @@ export function SettingsPage() {
       }
     }
 
-    const hydrateGoogleStatus = async () => {
+        const hydrateGoogleStatus = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession()
-
+    
       if (session?.provider_token) {
         localStorage.setItem(GOOGLE_PROVIDER_TOKEN_KEY, session.provider_token)
       }
-
+    
+      if (session?.provider_refresh_token) {
+        const { error } = await supabase.functions.invoke('google-calendar-token', {
+          body: {
+            action: 'store_refresh_token',
+            refreshToken: session.provider_refresh_token,
+          },
+        })
+    
+        if (error) {
+          console.warn('Google refresh token could not be stored:', error.message)
+        }
+      }
+    
       setGoogleConnected(Boolean(session || localStorage.getItem(GOOGLE_PROVIDER_TOKEN_KEY)))
-    }
+}
 
     void hydrateGoogleStatus()
     void loadFathomMeetings()
