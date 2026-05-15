@@ -11,33 +11,9 @@ create table if not exists public.google_oauth_tokens (
 
 alter table public.google_oauth_tokens enable row level security;
 
-drop policy if exists "Users can read their own Google OAuth token metadata"
-  on public.google_oauth_tokens;
-
-create policy "Users can read their own Google OAuth token metadata"
-  on public.google_oauth_tokens
-  for select
-  to authenticated
-  using (auth.uid() = user_id);
-
-drop policy if exists "Users can insert their own Google OAuth token"
-  on public.google_oauth_tokens;
-
-create policy "Users can insert their own Google OAuth token"
-  on public.google_oauth_tokens
-  for insert
-  to authenticated
-  with check (auth.uid() = user_id);
-
-drop policy if exists "Users can update their own Google OAuth token"
-  on public.google_oauth_tokens;
-
-create policy "Users can update their own Google OAuth token"
-  on public.google_oauth_tokens
-  for update
-  to authenticated
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+-- No public RLS policies are added.
+-- This table is intentionally accessed only through Supabase Edge Functions
+-- using the service role key.
 
 create or replace function public.set_google_oauth_tokens_updated_at()
 returns trigger
