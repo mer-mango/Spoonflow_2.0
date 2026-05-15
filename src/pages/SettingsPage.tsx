@@ -1,6 +1,3 @@
-Yes — replace the **entire `SettingsPage.tsx` file** with this. I cleaned up the misplaced Google block, restored the Archive task buttons, restored the Supabase card, and included the new Google connection status + disconnect behavior. 
-
-```tsx
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useTasks, type Task } from '../hooks/useTasks'
@@ -801,4 +798,3 @@ export function SettingsPage() {
     </section>
   )
 }
-```
