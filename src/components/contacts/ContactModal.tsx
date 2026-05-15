@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Modal } from '../shared/Modal'
 import type { Contact, ContactUpdateInput } from '../../hooks/useContacts'
 import { useTasks, type Task } from '../../hooks/useTasks'
@@ -60,6 +59,7 @@ const nurtureMethodOptions: Array<{ label: string; value: NurtureMethod }> = [
   { label: 'Skipped', value: 'skipped' },
 ]
 
+
 function makeInitials(name: string) {
   return name
     .split(' ')
@@ -67,6 +67,19 @@ function makeInitials(name: string) {
     .join('')
     .slice(0, 2)
     .toUpperCase()
+}
+
+const INITIAL_AVATAR_COLORS = ['#739196', '#7f9c9f', '#8ba5a8', '#96afb1']
+
+function initialsAvatarColor(seed?: string | null) {
+  const value = seed?.trim() || 'contact'
+  let hash = 0
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = value.charCodeAt(index) + ((hash << 5) - hash)
+  }
+
+  return INITIAL_AVATAR_COLORS[Math.abs(hash) % INITIAL_AVATAR_COLORS.length]
 }
 
 function dateInputValue(value?: string | null) {
@@ -325,6 +338,8 @@ export function ContactModal({
   const [nurtureFrequencyDays, setNurtureFrequencyDays] = useState('')
   const [nextNurtureDate, setNextNurtureDate] = useState('')
   const [starred, setStarred] = useState(false)
+  const [imageUrl, setImageUrl] = useState('')
+  const avatarFileInputRef = useRef<HTMLInputElement | null>(null)
 
   const [nurtureLogOpen, setNurtureLogOpen] = useState(false)
   const [nurtureLogMethod, setNurtureLogMethod] = useState<NurtureMethod>('email')
@@ -371,6 +386,7 @@ export function ContactModal({
   const displayRole = [role, company].filter(Boolean).join(' · ')
   const avatarColor = contact?.color || '#8ba5a8'
   const avatarInitials = contact?.initials || makeInitials(displayName)
+  const avatarInitialsColor = initialsAvatarColor(contact?.id ?? displayName)
 
   useEffect(() => {
     if (!open) return
@@ -408,6 +424,7 @@ setActiveTab(initialTab ?? routeTab ?? 'information')
     )
     setNextNurtureDate(dateInputValue(contact?.next_nurture_date))
     setStarred(Boolean(contact?.starred))
+    setImageUrl(text(contact?.image_url))
 
     setNurtureLogOpen(false)
     setNurtureLogMethod('email')
@@ -441,6 +458,7 @@ setActiveTab(initialTab ?? routeTab ?? 'information')
     notes: notes || null,
     nurture_frequency_days: nurtureFrequencyDays ? Number(nurtureFrequencyDays) : null,
     next_nurture_date: isoFromDateInput(nextNurtureDate),
+    image_url: imageUrl || null,
     starred,
     color: contact?.color || '#8ba5a8',
     initials: makeInitials(displayName),
@@ -550,6 +568,32 @@ setActiveTab(initialTab ?? routeTab ?? 'information')
     void onTasksChanged?.()
   }
 
+
+    const handleAvatarUpload = (file?: File | null) => {
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setErrorMessage('Please upload an image file.')
+      return
+    }
+
+    const reader = new FileReader()
+
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setImageUrl(reader.result)
+      }
+    }
+
+    reader.onerror = () => {
+      setErrorMessage('That image could not be uploaded.')
+    }
+
+    reader.readAsDataURL(file)
+  }
+
+  const handleSaveNurtureLog = () => {
+  
   const handleSaveNurtureLog = () => {
     if (!contact?.id) {
       setErrorMessage('Save this contact before logging nurture activity.')
@@ -643,12 +687,40 @@ setActiveTab(initialTab ?? routeTab ?? 'information')
             className="flex items-center gap-4 px-5 py-4 text-white"
             style={{ backgroundColor: avatarColor }}
           >
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white/30 bg-white/15 text-base font-semibold">
-              {contact?.image_url ? (
-                <img src={contact.image_url} alt="" className="h-full w-full object-cover" />
-              ) : (
-                avatarInitials
-              )}
+            <div className="group relative h-14 w-14 shrink-0">
+              <div
+                className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-white/30 text-base font-semibold text-white"
+                style={{
+                  backgroundColor: imageUrl ? undefined : avatarInitialsColor,
+                }}
+              >
+                {imageUrl ? (
+                  <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  avatarInitials
+                )}
+              </div>
+            
+              <button
+                type="button"
+                onClick={() => avatarFileInputRef.current?.click()}
+                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45 text-[10px] font-semibold text-white opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100"
+                aria-label={imageUrl ? 'Change contact image' : 'Upload contact image'}
+                title={imageUrl ? 'Change contact image' : 'Upload contact image'}
+              >
+                {imageUrl ? 'Change' : 'Upload'}
+              </button>
+            
+              <input
+                ref={avatarFileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => {
+                  handleAvatarUpload(event.target.files?.[0])
+                  event.currentTarget.value = ''
+                }}
+              />
             </div>
 
             <div className="min-w-0 flex-1">
