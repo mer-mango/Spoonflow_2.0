@@ -737,28 +737,44 @@ export function useGoogleCalendar() {
 
     try {
       const {
-        data: { session },
-      } = await supabase.auth.getSession()
+  data: { session },
+} = await supabase.auth.getSession()
 
-      const liveProviderToken = session?.provider_token ?? null
-      const userId = session?.user?.id ?? null
+const liveProviderToken = session?.provider_token ?? null
+const userId = session?.user?.id ?? null
 
-      if (liveProviderToken) {
-        saveGoogleProviderToken(liveProviderToken)
-      }
+if (liveProviderToken) {
+  saveGoogleProviderToken(liveProviderToken)
+}
 
-      const googleProviderToken = liveProviderToken || getSavedGoogleProviderToken()
+const { data: refreshedTokenData, error: refreshedTokenError } =
+  await supabase.functions.invoke('google-calendar-token', {
+    body: {
+      action: 'get_access_token',
+    },
+  })
 
-      if (!googleProviderToken) {
-        console.warn(
-          'No Google provider token found. Reconnect Google Calendar from Settings → Integrations.',
-        )
+if (refreshedTokenError) {
+  console.warn('Fresh Google access token could not be retrieved:', refreshedTokenError.message)
+}
 
-        setCalendarEvents([])
-        setEnrichedCalendarEvents([])
-        return
-      }
+const refreshedAccessToken =
+  typeof refreshedTokenData?.accessToken === 'string'
+    ? refreshedTokenData.accessToken
+    : null
 
+const googleProviderToken =
+  refreshedAccessToken || liveProviderToken || getSavedGoogleProviderToken()
+
+if (!googleProviderToken) {
+  console.warn(
+    'No Google provider token found. Reconnect Google Calendar from Settings → Integrations.',
+  )
+
+  setCalendarEvents([])
+  setEnrichedCalendarEvents([])
+  return
+}
       const { data: contacts } = await supabase
         .from('contacts')
         .select(
