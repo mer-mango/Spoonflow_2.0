@@ -591,8 +591,6 @@ setActiveTab(initialTab ?? routeTab ?? 'information')
 
     reader.readAsDataURL(file)
   }
-
-  const handleSaveNurtureLog = () => {
   
   const handleSaveNurtureLog = () => {
     if (!contact?.id) {
