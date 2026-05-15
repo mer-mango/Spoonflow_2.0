@@ -795,9 +795,19 @@ export function useGoogleCalendar() {
     }
   }, [])
 
-  useEffect(() => {
+ useEffect(() => {
+  void syncCalendar()
+
+  const handleManualSync = () => {
     void syncCalendar()
-  }, [syncCalendar])
+  }
+
+  window.addEventListener('spoonflow:sync-google-calendar', handleManualSync)
+
+  return () => {
+    window.removeEventListener('spoonflow:sync-google-calendar', handleManualSync)
+  }
+}, [syncCalendar])
 
   return useMemo(
     () => ({
