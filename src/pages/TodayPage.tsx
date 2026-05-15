@@ -897,14 +897,10 @@ function TodayTimeline({
                   <div
                     className="relative z-10 flex h-[34px] w-[34px] items-center justify-center rounded-full"
                     style={{
-                      backgroundColor: color,
-                      outline: isCurrent
-                        ? `4px solid ${color}33`
-                        : activity.isJamieAdded
-                          ? `3px solid ${color}22`
-                          : undefined,
-                      outlineOffset: isCurrent ? 2 : activity.isJamieAdded ? 1 : undefined,
-                    }}
+                    backgroundColor: color,
+                    outline: isCurrent ? `4px solid ${color}33` : undefined,
+                    outlineOffset: isCurrent ? 2 : undefined,
+                  }}
                   >
                     <ActivityIcon type={activity.type} />
                   </div>
