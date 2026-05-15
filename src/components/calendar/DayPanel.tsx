@@ -5,6 +5,8 @@ import { ContactModal } from '../contacts/ContactModal'
 import { useContacts, type Contact } from '../../hooks/useContacts'
 import { useTasks, type Task } from '../../hooks/useTasks'
 
+const EHS_MEETINGS_CALENDAR_ID = 'meredith@empowerhealthstrategies.com'
+
 type DayPanelProps = {
   dateKey: string
   events: CalendarItem[]
@@ -173,21 +175,25 @@ export function DayPanel({
               <div className="space-y-2">
                 {sortedEvents.map((event) => {
                   const color = event.color ?? '#6484a1'
+                  const isEhsMeeting =
+                    event.calendarId === EHS_MEETINGS_CALENDAR_ID
                   const contactName = event.contactId
                     ? contactNameById.get(event.contactId) ?? null
                     : null
-                  const hasLinkedContact = Boolean(event.contactId && contactName)
+                  const canOpenInteractionDossier =
+                    isEhsMeeting &&
+                    Boolean(event.contactId && contactById.has(event.contactId))
 
                   return (
                     <article
                       key={`${event.id}-${event.startTime}`}
                       onClick={() => {
-                        if (event.contactId) {
+                        if (canOpenInteractionDossier && event.contactId) {
                           openContactModal(event.contactId, 'interactions')
                         }
                       }}
                       className={`rounded-xl border border-[var(--border)] bg-white p-3 ${
-                        hasLinkedContact
+                        canOpenInteractionDossier
                           ? 'cursor-pointer transition hover:bg-[#f8fbfd]'
                           : ''
                       }`}
@@ -219,15 +225,15 @@ export function DayPanel({
                           {durationLabel(event.startTime, event.endTime)})
                         </p>
 
-                        {event.contactId && contactName && (
+                        {isEhsMeeting && event.contactId && contactName && (
                           <button
                             type="button"
                             onClick={(clickEvent) => {
                               clickEvent.stopPropagation()
-                              openContactModal(event.contactId!, 'interactions')
+                              openContactModal(event.contactId!, 'information')
                             }}
                             className="mt-2 inline-flex items-center rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92] transition hover:bg-[rgba(139,165,168,0.24)] hover:text-[#54777a]"
-                            title="Open contact interactions"
+                            title="Open contact profile"
                           >
                             {contactName}
                           </button>
