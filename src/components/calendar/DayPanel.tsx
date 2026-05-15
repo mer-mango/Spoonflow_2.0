@@ -1,15 +1,16 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import type { CalendarItem } from './EventPill'
 import { TaskModal } from '../shared/TaskModal'
-import { useContacts } from '../../hooks/useContacts'
+import { ContactModal } from '../contacts/ContactModal'
+import { useContacts, type Contact } from '../../hooks/useContacts'
 import { useTasks, type Task } from '../../hooks/useTasks'
 
 type DayPanelProps = {
   dateKey: string
   events: CalendarItem[]
-  onOpenContactInteractions: (contactId: string) => void
 }
+
+type ContactModalTab = 'information' | 'interactions' | 'notes' | 'tasks' | 'nurture'
 
 function dateFromLocalKey(dateKey: string) {
   const [year, month, day] = dateKey.split('-').map(Number)
@@ -81,7 +82,7 @@ function SectionHeader({
   count: number
 }) {
   return (
-    <div className="mb-2 flex items-center justify-between">
+    <div className="mb-2 flex items-center gap-2">
       <h3 className="font-sans text-[12px] font-semibold uppercase tracking-[0.04em] text-[var(--muted)]">
         {label}
       </h3>
@@ -96,16 +97,42 @@ function SectionHeader({
 export function DayPanel({
   dateKey,
   events,
-  onOpenContactInteractions,
 }: DayPanelProps) {
-  const navigate = useNavigate()
-  const { contacts } = useContacts()
-  const { tasks, updateTask } = useTasks()
+  const { contacts, createContact, updateContact } = useContacts()
+  const { tasks, updateTask, loadTasks } = useTasks()
+
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
+  const [contactModalOpen, setContactModalOpen] = useState(false)
+  const [contactModalTab, setContactModalTab] =
+    useState<ContactModalTab>('information')
 
   const contactNameById = new Map(
     contacts.map((contact) => [contact.id, contact.name]),
   )
+
+  const contactById = new Map(
+    contacts.map((contact) => [contact.id, contact]),
+  )
+
+  const openContactModal = (
+    contactId: string,
+    tab: ContactModalTab,
+  ) => {
+    const contact = contactById.get(contactId)
+
+    if (!contact) return
+
+    setSelectedContact(contact)
+    setContactModalTab(tab)
+    setContactModalOpen(true)
+  }
+
+  const closeContactModal = () => {
+    setContactModalOpen(false)
+    setSelectedContact(null)
+    setContactModalTab('information')
+  }
 
   const sortedEvents = [...events].sort(
     (a, b) => +new Date(a.startTime) - +new Date(b.startTime),
@@ -149,66 +176,62 @@ export function DayPanel({
                   const contactName = event.contactId
                     ? contactNameById.get(event.contactId) ?? null
                     : null
+                  const hasLinkedContact = Boolean(event.contactId && contactName)
 
                   return (
-                   <article
-                    key={`${event.id}-${event.startTime}`}
-                    onClick={() => {
-                      if (event.contactId) {
-                        onOpenContactInteractions(event.contactId)
-                      }
-                    }}
-                    className={`rounded-xl border border-[var(--border)] bg-white p-3 ${
-                      event.contactId ? 'cursor-pointer transition hover:bg-[#f8fbfd]' : ''
-                    }`}
-                    style={{ borderLeft: `4px solid ${color}` }}
-                  >
-                      <div className="flex items-start gap-3">
-                        <div
-                          className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
-                          style={{ backgroundColor: color }}
-                        />
+                    <article
+                      key={`${event.id}-${event.startTime}`}
+                      onClick={() => {
+                        if (event.contactId) {
+                          openContactModal(event.contactId, 'interactions')
+                        }
+                      }}
+                      className={`rounded-xl border border-[var(--border)] bg-white p-3 ${
+                        hasLinkedContact
+                          ? 'cursor-pointer transition hover:bg-[#f8fbfd]'
+                          : ''
+                      }`}
+                      style={{ borderLeft: `4px solid ${color}` }}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="truncate text-sm font-semibold text-[var(--text)]">
+                            {event.title}
+                          </h4>
 
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="truncate text-sm font-semibold text-[var(--text)]">
-                              {event.title}
-                            </h4>
-
-                            {event.meetingLink && (
-                              <a
-                                href={event.meetingLink}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={(event) => event.stopPropagation()}
-                                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#f5f3f0] text-[var(--muted)] transition hover:bg-[#ece8e2] hover:text-[var(--text)]"
-                                title="Open meeting link"
-                                aria-label="Open meeting link"
-                              >
-                                <LinkIcon />
-                              </a>
-                            )}
-                          </div>
-
-                          <p className="mt-1 text-xs text-[var(--muted)]">
-                            {timeLabel(event.startTime)} (
-                            {durationLabel(event.startTime, event.endTime)})
-                          </p>
-
-                          {event.contactId && contactName && (
-                            <button
-                              type="button"
-                              onClick={(clickEvent) => {
-                              clickEvent.stopPropagation()
-                              onOpenContactInteractions(event.contactId!)
-                            }}
-                              className="mt-2 inline-flex items-center rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92] transition hover:bg-[rgba(139,165,168,0.24)] hover:text-[#54777a]"
-                              title="Open contact interactions"
+                          {event.meetingLink && (
+                            <a
+                              href={event.meetingLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(clickEvent) => clickEvent.stopPropagation()}
+                              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#f5f3f0] text-[var(--muted)] transition hover:bg-[#ece8e2] hover:text-[var(--text)]"
+                              title="Open meeting link"
+                              aria-label="Open meeting link"
                             >
-                              {contactName}
-                            </button>
+                              <LinkIcon />
+                            </a>
                           )}
                         </div>
+
+                        <p className="mt-1 text-xs text-[var(--muted)]">
+                          {timeLabel(event.startTime)} (
+                          {durationLabel(event.startTime, event.endTime)})
+                        </p>
+
+                        {event.contactId && contactName && (
+                          <button
+                            type="button"
+                            onClick={(clickEvent) => {
+                              clickEvent.stopPropagation()
+                              openContactModal(event.contactId!, 'interactions')
+                            }}
+                            className="mt-2 inline-flex items-center rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92] transition hover:bg-[rgba(139,165,168,0.24)] hover:text-[#54777a]"
+                            title="Open contact interactions"
+                          >
+                            {contactName}
+                          </button>
+                        )}
                       </div>
                     </article>
                   )
@@ -246,9 +269,9 @@ export function DayPanel({
                       {task.contact_id && contactName && (
                         <button
                           type="button"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            navigate(`/contacts/${task.contact_id}`)
+                          onClick={(clickEvent) => {
+                            clickEvent.stopPropagation()
+                            openContactModal(task.contact_id!, 'information')
                           }}
                           className="mt-2 inline-flex items-center rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92] transition hover:bg-[rgba(139,165,168,0.24)] hover:text-[#54777a]"
                           title="Open contact profile"
@@ -271,16 +294,19 @@ export function DayPanel({
                 {selectedDayNurtures.map((contact) => (
                   <article
                     key={contact.id}
-                    onClick={() => navigate(`/contacts/${contact.id}?tab=nurture`)}
+                    onClick={() => openContactModal(contact.id, 'nurture')}
                     className="cursor-pointer rounded-xl border border-[var(--border)] bg-white p-3 transition hover:bg-[#f8fdf8]"
                     style={{ borderLeft: '4px solid #8fa790' }}
                   >
+                    <h4 className="font-serif text-sm font-medium text-[var(--text)]">
+                      {contact.name}
+                    </h4>
 
                     <button
                       type="button"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        navigate(`/contacts/${contact.id}`)
+                      onClick={(clickEvent) => {
+                        clickEvent.stopPropagation()
+                        openContactModal(contact.id, 'information')
                       }}
                       className="mt-2 inline-flex items-center rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92] transition hover:bg-[rgba(139,165,168,0.24)] hover:text-[#54777a]"
                       title="Open contact profile"
@@ -310,6 +336,16 @@ export function DayPanel({
 
           await updateTask(id, patch)
         }}
+      />
+
+      <ContactModal
+        open={contactModalOpen}
+        contact={selectedContact}
+        initialTab={contactModalTab}
+        onClose={closeContactModal}
+        onCreate={createContact}
+        onUpdate={updateContact}
+        onTasksChanged={loadTasks}
       />
     </>
   )
