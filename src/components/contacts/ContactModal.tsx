@@ -25,6 +25,7 @@ type Props = {
   onCreate: (payload: EditableContactFields) => Promise<MutationResult>
   onUpdate: (contactId: string, patch: ContactUpdateInput) => Promise<MutationResult>
   onTasksChanged?: () => Promise<unknown> | void
+  initialTab?: Tab
 }
 
 type Tab = 'information' | 'interactions' | 'notes' | 'tasks' | 'nurture'
@@ -283,7 +284,9 @@ export function ContactModal({
   onCreate,
   onUpdate,
   onTasksChanged,
+  initialTab,
 }: Props) {
+  
   const { tasks, createTask, updateTask, archiveTask } = useTasks()
 
   const {
@@ -372,8 +375,17 @@ export function ContactModal({
   useEffect(() => {
     if (!open) return
 
-    const tabParam = new URLSearchParams(window.location.search).get('tab')
-    setActiveTab(tabParam === 'nurture' ? 'nurture' : 'information')
+  const tabParam = new URLSearchParams(window.location.search).get('tab')
+  const routeTab: Tab | null =
+    tabParam === 'information' ||
+    tabParam === 'interactions' ||
+    tabParam === 'notes' ||
+    tabParam === 'tasks' ||
+    tabParam === 'nurture'
+      ? tabParam
+      : null
+
+setActiveTab(initialTab ?? routeTab ?? 'information')
     setContactTaskView('active')
     setErrorMessage(null)
     setSelectedTask(null)
@@ -412,7 +424,7 @@ export function ContactModal({
     } else {
       setNurtureLogs([])
     }
-  }, [open, contact])
+  }, [open, contact, initialTab])
 
   const buildPayload = (): EditableContactFields => ({
     name: displayName,
