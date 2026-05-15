@@ -1,3 +1,4 @@
+import { useToast } from '../components/shared/Toast'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useTasks, type Task } from '../hooks/useTasks'
@@ -116,6 +117,8 @@ export function SettingsPage() {
   const [fathomMeetings, setFathomMeetings] = useState<FathomMeeting[]>([])
   const [isSyncingFathom, setIsSyncingFathom] = useState(false)
   const [isLoadingMeetings, setIsLoadingMeetings] = useState(false)
+  const { notify } = useToast()
+  const [isCheckingGoogleConnection, setIsCheckingGoogleConnection] = useState(true)
   const {
   archivedTasks,
   loadArchivedTasks,
@@ -164,28 +167,43 @@ export function SettingsPage() {
     }
 
         const hydrateGoogleStatus = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-    
-      if (session?.provider_token) {
-        localStorage.setItem(GOOGLE_PROVIDER_TOKEN_KEY, session.provider_token)
-      }
-    
-      if (session?.provider_refresh_token) {
-        const { error } = await supabase.functions.invoke('google-calendar-token', {
-          body: {
-            action: 'store_refresh_token',
-            refreshToken: session.provider_refresh_token,
-          },
-        })
-    
-        if (error) {
-          console.warn('Google refresh token could not be stored:', error.message)
-        }
-      }
-    
-      setGoogleConnected(Boolean(session || localStorage.getItem(GOOGLE_PROVIDER_TOKEN_KEY)))
+  setIsCheckingGoogleConnection(true)
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  if (session?.provider_token) {
+    localStorage.setItem(GOOGLE_PROVIDER_TOKEN_KEY, session.provider_token)
+  }
+
+  if (session?.provider_refresh_token) {
+    const { error } = await supabase.functions.invoke('google-calendar-token', {
+      body: {
+        action: 'store_refresh_token',
+        refreshToken: session.provider_refresh_token,
+      },
+    })
+
+    if (error) {
+      console.warn('Google refresh token could not be stored:', error.message)
+    }
+  }
+
+  const { data, error } = await supabase.functions.invoke('google-calendar-token', {
+    body: {
+      action: 'get_connection_status',
+    },
+  })
+
+  if (error) {
+    console.warn('Google connection status could not be checked:', error.message)
+    setGoogleConnected(Boolean(localStorage.getItem(GOOGLE_PROVIDER_TOKEN_KEY)))
+  } else {
+    setGoogleConnected(Boolean(data?.connected))
+  }
+
+  setIsCheckingGoogleConnection(false)
 }
 
     void hydrateGoogleStatus()
@@ -458,22 +476,37 @@ const handleDeleteTask = async (task: Task) => {
               </div>
 
               <div className="flex shrink-0 flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => void handleRestoreTask(task)}
-                  className="rounded-lg bg-[var(--tasks)] px-3 py-2 text-xs font-semibold text-white"
-                >
-                  Restore
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => void handleDeleteTask(task)}
-                  className="rounded-lg border border-[rgba(201,136,142,0.35)] bg-white px-3 py-2 text-xs font-semibold text-[#a85c64]"
-                >
-                  Delete permanently
-                </button>
-              </div>
+              <span
+                className={`rounded-lg px-3 py-2 text-xs font-medium ${
+                  isCheckingGoogleConnection
+                    ? 'bg-[#f3f1ef] text-[var(--muted)]'
+                    : googleConnected
+                      ? 'bg-[#e8f2ea] text-[#4f7457]'
+                      : 'bg-[rgba(201,136,142,0.12)] text-[#a85c64]'
+                }`}
+              >
+                {isCheckingGoogleConnection
+                  ? 'Checking...'
+                  : googleConnected
+                    ? 'Connected'
+                    : 'Disconnected'}
+              </span>
+            
+              <button
+                type="button"
+                onClick={() => {
+                  if (googleConnected) {
+                    void disconnectGoogleCalendar()
+                  } else {
+                    void connectGoogleCalendar()
+                  }
+                }}
+                className="rounded-lg bg-[var(--jamie)] px-3 py-2 text-xs font-semibold text-white"
+              >
+                {googleConnected ? 'Disconnect' : 'Connect'}
+              </button>
+            </div>
+              
             </article>
           ))}
         </div>
@@ -481,6 +514,9 @@ const handleDeleteTask = async (task: Task) => {
     </div>
   </div>
 )}
+
+          
+          
           {activeSection === 'integrations' && (
             <div>
               <h2 className="text-2xl">Integrations</h2>
@@ -490,67 +526,61 @@ const handleDeleteTask = async (task: Task) => {
 
               <div className="mt-6 space-y-4">
                 <article className="rounded-xl border border-[var(--border)] bg-white p-5">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div className="flex gap-4">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--meeting)] text-sm font-semibold text-white">
-                        G
-                      </div>
+  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <div className="flex gap-4">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--meeting)] text-sm font-semibold text-white">
+        G
+      </div>
 
-                      <div>
-                        <h3 className="font-semibold">Google Calendar</h3>
-                        <p className="mt-1 max-w-2xl text-sm text-[var(--muted)]">
-                          Authorize SpoonFlow to read your Google Calendar so Today and Calendar can pull in meetings,
-                          medical appointments, and prep blocks.
-                        </p>
+      <div>
+        <h3 className="font-semibold">Google Calendar</h3>
+        <p className="mt-1 max-w-2xl text-sm text-[var(--muted)]">
+          Authorize SpoonFlow to read your Google Calendar so Today and Calendar can pull in meetings,
+          medical appointments, and prep blocks.
+        </p>
 
-                        <div className="mt-4 rounded-lg bg-[#f3f1ef] px-3 py-3 text-xs text-[var(--muted)]">
-                          Vercel URL to add in Supabase redirect settings:{' '}
-                          <span className="font-semibold text-[var(--text)]">
-                            {window.location.origin}/settings/integrations
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+        <div className="mt-4 rounded-lg bg-[#f3f1ef] px-3 py-3 text-xs text-[var(--muted)]">
+          Vercel URL to add in Supabase redirect settings:{' '}
+          <span className="font-semibold text-[var(--text)]">
+            {window.location.origin}/settings/integrations
+          </span>
+        </div>
+      </div>
+    </div>
 
-                    <div className="flex shrink-0 flex-wrap items-center gap-2">
-                      {googleConnected && (
-                        <span className="rounded-lg bg-[#e8f2ea] px-3 py-2 text-xs font-medium text-[#4f7457]">
-                          Connected
-                        </span>
-                      )}
+    <div className="flex shrink-0 flex-wrap items-center gap-2">
+      <span
+        className={`rounded-lg px-3 py-2 text-xs font-medium ${
+          isCheckingGoogleConnection
+            ? 'bg-[#f3f1ef] text-[var(--muted)]'
+            : googleConnected
+              ? 'bg-[#e8f2ea] text-[#4f7457]'
+              : 'bg-[rgba(201,136,142,0.12)] text-[#a85c64]'
+        }`}
+      >
+        {isCheckingGoogleConnection
+          ? 'Checking...'
+          : googleConnected
+            ? 'Connected'
+            : 'Disconnected'}
+      </span>
 
-                      <button
-                        type="button"
-                        onClick={connectGoogleCalendar}
-                        className="rounded-lg bg-[var(--jamie)] px-3 py-2 text-xs font-semibold text-white"
-                      >
-                        {googleConnected ? 'Reconnect' : 'Connect'}
-                      </button>
-                    </div>
-                  </div>
-                </article>
-
-                <article className="rounded-xl border border-[var(--border)] bg-white p-5">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div className="flex gap-4">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--nurture)] text-sm font-semibold text-white">
-                        S
-                      </div>
-
-                      <div>
-                        <h3 className="font-semibold">Supabase</h3>
-                        <p className="mt-1 max-w-2xl text-sm text-[var(--muted)]">
-                          Stores contacts, tasks, content items, goals, Jamie conversations, app settings, and imported
-                          Fathom meeting transcripts.
-                        </p>
-                      </div>
-                    </div>
-
-                    <span className="w-fit rounded-lg bg-[#e8f2ea] px-3 py-2 text-xs font-medium text-[#4f7457]">
-                      Connected
-                    </span>
-                  </div>
-                </article>
+      <button
+        type="button"
+        onClick={() => {
+          if (googleConnected) {
+            void disconnectGoogleCalendar()
+          } else {
+            void connectGoogleCalendar()
+          }
+        }}
+        className="rounded-lg bg-[var(--jamie)] px-3 py-2 text-xs font-semibold text-white"
+      >
+        {googleConnected ? 'Disconnect' : 'Connect'}
+      </button>
+    </div>
+  </div>
+</article>
 
                 <article className="rounded-xl border border-[var(--border)] bg-white p-5">
                   <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
