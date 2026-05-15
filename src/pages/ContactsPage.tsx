@@ -14,15 +14,6 @@ function initials(name: string) {
     .toUpperCase()
 }
 
-function initials(name: string) {
-  return name
-    .split(' ')
-    .map((part) => part[0] ?? '')
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
-}
-
 const INITIAL_AVATAR_COLORS = ['#739196', '#7f9c9f', '#8ba5a8', '#96afb1']
 
 function initialsAvatarColor(seed?: string | null) {
