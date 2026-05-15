@@ -14,6 +14,28 @@ function initials(name: string) {
     .toUpperCase()
 }
 
+function initials(name: string) {
+  return name
+    .split(' ')
+    .map((part) => part[0] ?? '')
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+}
+
+const INITIAL_AVATAR_COLORS = ['#739196', '#7f9c9f', '#8ba5a8', '#96afb1']
+
+function initialsAvatarColor(seed?: string | null) {
+  const value = seed?.trim() || 'contact'
+  let hash = 0
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = value.charCodeAt(index) + ((hash << 5) - hash)
+  }
+
+  return INITIAL_AVATAR_COLORS[Math.abs(hash) % INITIAL_AVATAR_COLORS.length]
+}
+
 function formatDate(value?: string | null) {
   if (!value) return '—'
 
@@ -340,7 +362,11 @@ export function ContactsPage() {
                           <div className="flex min-w-0 items-center gap-3">
                             <span
                               className="inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] font-semibold text-white"
-                              style={{ backgroundColor: contact.color ?? '#8ba5a8' }}
+                              style={{
+                              backgroundColor: contact.image_url
+                                ? contact.color ?? '#8ba5a8'
+                                : initialsAvatarColor(contact.id ?? contact.name),
+                            }}
                             >
                               {contact.image_url ? (
                                 <img
