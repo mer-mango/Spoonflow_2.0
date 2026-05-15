@@ -210,24 +210,25 @@ export function Sidebar() {
       <div className="mx-3 h-px bg-[var(--border)]" />
 
       <div className="px-2 pb-3 pt-2">
-       <button
-          type="button"
-          onClick={() => {
-            window.dispatchEvent(new CustomEvent('spoonflow:sync-google-calendar'))
-          }}
-          className="mb-1 flex w-full cursor-pointer items-center gap-2 rounded-full px-2.5 py-2 text-left text-[12px] leading-none text-[var(--muted)] transition-colors hover:bg-black/[0.04]"
-        >
-          <FooterIcon icon="sync" />
-          <span className="min-w-0 flex-1 truncate">Sync Calendar</span>
-        </button>
+     <button
+  type="button"
+  className="mb-1 flex w-full cursor-pointer items-center gap-2 rounded-full px-2.5 py-2 text-left text-[12px] leading-none text-[var(--muted)] transition-colors hover:bg-black/[0.04]"
+>
+  <FooterIcon icon="bell" />
+  <span className="min-w-0 flex-1 truncate">Notifications</span>
+  <span className="text-[11px] leading-none text-[var(--muted)]">0</span>
+</button>
 
-        <button
-          type="button"
-          className="mb-1 flex w-full cursor-pointer items-center gap-2 rounded-full px-2.5 py-2 text-left text-[12px] leading-none text-[var(--muted)] transition-colors hover:bg-black/[0.04]"
-        >
-          <FooterIcon icon="sync" />
-          <span className="min-w-0 flex-1 truncate">Sync Calendar</span>
-        </button>
+<button
+  type="button"
+  onClick={() => {
+    window.dispatchEvent(new CustomEvent('spoonflow:sync-google-calendar'))
+  }}
+  className="mb-1 flex w-full cursor-pointer items-center gap-2 rounded-full px-2.5 py-2 text-left text-[12px] leading-none text-[var(--muted)] transition-colors hover:bg-black/[0.04]"
+>
+  <FooterIcon icon="sync" />
+  <span className="min-w-0 flex-1 truncate">Sync Calendar</span>
+</button>
 
         <NavLink
           to="/settings/integrations"
