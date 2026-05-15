@@ -1,7 +1,10 @@
-import { useToast } from '../components/shared/Toast'
+Yes — replace the **entire `SettingsPage.tsx` file** with this. I cleaned up the misplaced Google block, restored the Archive task buttons, restored the Supabase card, and included the new Google connection status + disconnect behavior. 
+
+```tsx
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useTasks, type Task } from '../hooks/useTasks'
+import { useToast } from '../components/shared/Toast'
 
 type SettingsSection =
   | 'integrations'
@@ -67,6 +70,7 @@ function getMeetingTitle(meeting: FathomMeeting) {
     'Untitled Fathom meeting'
   )
 }
+
 function getMeetingDate(meeting: FathomMeeting) {
   return (
     meeting.started_at ||
@@ -76,9 +80,11 @@ function getMeetingDate(meeting: FathomMeeting) {
     null
   )
 }
+
 function getMeetingUrl(meeting: FathomMeeting) {
   return meeting.fathom_url || meeting.url || null
 }
+
 function formatShortDate(value?: string | null) {
   if (!value) return '—'
 
@@ -109,22 +115,26 @@ const taskTypeLabels: Record<string, string> = {
 }
 
 export function SettingsPage() {
-  const [activeSection, setActiveSection] = useState<SettingsSection>(() => getInitialSection())
+  const [activeSection, setActiveSection] = useState<SettingsSection>(() =>
+    getInitialSection(),
+  )
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [googleConnected, setGoogleConnected] = useState(false)
+  const [isCheckingGoogleConnection, setIsCheckingGoogleConnection] = useState(true)
   const [fathomEnabled, setFathomEnabled] = useState(false)
   const [fathomWorkspaceUrl, setFathomWorkspaceUrl] = useState('')
   const [fathomMeetings, setFathomMeetings] = useState<FathomMeeting[]>([])
   const [isSyncingFathom, setIsSyncingFathom] = useState(false)
   const [isLoadingMeetings, setIsLoadingMeetings] = useState(false)
+
   const { notify } = useToast()
-  const [isCheckingGoogleConnection, setIsCheckingGoogleConnection] = useState(true)
+
   const {
-  archivedTasks,
-  loadArchivedTasks,
-  restoreTask,
-  deleteTask,
-} = useTasks()
+    archivedTasks,
+    loadArchivedTasks,
+    restoreTask,
+    deleteTask,
+  } = useTasks()
 
   const webhookUrl = useMemo(() => getFathomWebhookUrl(), [])
 
@@ -166,50 +176,50 @@ export function SettingsPage() {
       }
     }
 
-        const hydrateGoogleStatus = async () => {
-  setIsCheckingGoogleConnection(true)
+    const hydrateGoogleStatus = async () => {
+      setIsCheckingGoogleConnection(true)
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
 
-  if (session?.provider_token) {
-    localStorage.setItem(GOOGLE_PROVIDER_TOKEN_KEY, session.provider_token)
-  }
+      if (session?.provider_token) {
+        localStorage.setItem(GOOGLE_PROVIDER_TOKEN_KEY, session.provider_token)
+      }
 
-  if (session?.provider_refresh_token) {
-    const { error } = await supabase.functions.invoke('google-calendar-token', {
-      body: {
-        action: 'store_refresh_token',
-        refreshToken: session.provider_refresh_token,
-      },
-    })
+      if (session?.provider_refresh_token) {
+        const { error } = await supabase.functions.invoke('google-calendar-token', {
+          body: {
+            action: 'store_refresh_token',
+            refreshToken: session.provider_refresh_token,
+          },
+        })
 
-    if (error) {
-      console.warn('Google refresh token could not be stored:', error.message)
+        if (error) {
+          console.warn('Google refresh token could not be stored:', error.message)
+        }
+      }
+
+      const { data, error } = await supabase.functions.invoke('google-calendar-token', {
+        body: {
+          action: 'get_connection_status',
+        },
+      })
+
+      if (error) {
+        console.warn('Google connection status could not be checked:', error.message)
+        setGoogleConnected(Boolean(localStorage.getItem(GOOGLE_PROVIDER_TOKEN_KEY)))
+      } else {
+        setGoogleConnected(Boolean(data?.connected))
+      }
+
+      setIsCheckingGoogleConnection(false)
     }
-  }
-
-  const { data, error } = await supabase.functions.invoke('google-calendar-token', {
-    body: {
-      action: 'get_connection_status',
-    },
-  })
-
-  if (error) {
-    console.warn('Google connection status could not be checked:', error.message)
-    setGoogleConnected(Boolean(localStorage.getItem(GOOGLE_PROVIDER_TOKEN_KEY)))
-  } else {
-    setGoogleConnected(Boolean(data?.connected))
-  }
-
-  setIsCheckingGoogleConnection(false)
-}
 
     void hydrateGoogleStatus()
     void loadFathomMeetings()
   }, [loadFathomMeetings])
-  
+
   useEffect(() => {
     if (activeSection === 'archive') {
       void loadArchivedTasks()
@@ -235,6 +245,25 @@ export function SettingsPage() {
     if (error) {
       setStatusMessage(error.message)
     }
+  }
+
+  const disconnectGoogleCalendar = async () => {
+    setStatusMessage(null)
+
+    const { error } = await supabase.functions.invoke('google-calendar-token', {
+      body: {
+        action: 'disconnect_google_calendar',
+      },
+    })
+
+    if (error) {
+      setStatusMessage(error.message)
+      return
+    }
+
+    localStorage.removeItem(GOOGLE_PROVIDER_TOKEN_KEY)
+    setGoogleConnected(false)
+    notify('Google Calendar disconnected.')
   }
 
   const saveFathomSetup = () => {
@@ -287,37 +316,38 @@ export function SettingsPage() {
       setIsSyncingFathom(false)
     }
   }
-const handleRestoreTask = async (task: Task) => {
-  const { error } = await restoreTask(task.id)
 
-  if (error) {
-    setStatusMessage(`Task restore failed: ${error.message}`)
-    return
+  const handleRestoreTask = async (task: Task) => {
+    const { error } = await restoreTask(task.id)
+
+    if (error) {
+      setStatusMessage(`Task restore failed: ${error.message}`)
+      return
+    }
+
+    setStatusMessage('Task restored.')
+    await loadArchivedTasks()
   }
 
-  setStatusMessage('Task restored.')
-  await loadArchivedTasks()
-}
+  const handleDeleteTask = async (task: Task) => {
+    const shouldDelete = window.confirm(
+      `Permanently delete "${task.title}"? This cannot be undone.`,
+    )
 
-const handleDeleteTask = async (task: Task) => {
-  const shouldDelete = window.confirm(
-    `Permanently delete "${task.title}"? This cannot be undone.`,
-  )
+    if (!shouldDelete) return
 
-  if (!shouldDelete) return
+    const { error } = await deleteTask(task.id)
 
-  const { error } = await deleteTask(task.id)
+    if (error) {
+      setStatusMessage(`Task delete failed: ${error.message}`)
+      return
+    }
 
-  if (error) {
-    setStatusMessage(`Task delete failed: ${error.message}`)
-    return
+    setStatusMessage('Task permanently deleted.')
+    await loadArchivedTasks()
   }
 
-  setStatusMessage('Task permanently deleted.')
-  await loadArchivedTasks()
-}
-  
-    const sections: Array<{
+  const sections: Array<{
     id: SettingsSection
     label: string
     group: 'Workspace' | 'Preferences' | 'Admin'
@@ -370,7 +400,6 @@ const handleDeleteTask = async (task: Task) => {
                         window.history.replaceState(null, '', '/settings')
                       }
                     }}
-
                     className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition ${
                       activeSection === item.id
                         ? 'bg-[#f5f1f4] font-medium text-[var(--jamie)]'
@@ -394,129 +423,112 @@ const handleDeleteTask = async (task: Task) => {
           )}
 
           {activeSection === 'archive' && (
-  <div>
-    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-      <div>
-        <h2 className="text-2xl">Archive</h2>
-        <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
-          Review archived items and restore anything you want back in your workspace.
-          For now, this section supports archived tasks.
-        </p>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => void loadArchivedTasks()}
-        className="w-fit rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--text)]"
-      >
-        Refresh
-      </button>
-    </div>
-
-    <div className="mt-6 rounded-xl border border-[var(--border)] bg-white">
-      <header className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
-        <div>
-          <h3 className="font-semibold">Archived Tasks</h3>
-          <p className="mt-1 text-xs text-[var(--muted)]">
-            {archivedTasks.length} archived task{archivedTasks.length === 1 ? '' : 's'}
-          </p>
-        </div>
-      </header>
-
-      {archivedTasks.length === 0 ? (
-        <div className="p-8 text-center">
-          <p className="font-serif text-xl text-[var(--text)]">No archived tasks</p>
-          <p className="mt-2 text-sm text-[var(--muted)]">
-            Tasks you archive will appear here so you can restore them later.
-          </p>
-        </div>
-      ) : (
-        <div className="divide-y divide-[var(--border)]">
-          {archivedTasks.map((task) => (
-            <article
-              key={task.id}
-              className="flex flex-col gap-3 px-5 py-4 md:flex-row md:items-center md:justify-between"
-            >
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h4 className="truncate font-semibold text-[var(--text)]">
-                    {task.title}
-                  </h4>
-
-                  {task.starred && (
-                    <span className="text-[#f0c040]">★</span>
-                  )}
-                </div>
-
-                <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <span className="rounded-full bg-[rgba(193,152,173,0.16)] px-2.5 py-1 text-[10.5px] font-medium text-[#9f6e89]">
-                    {statusLabel(task.status)}
-                  </span>
-
-                  {task.task_type && (
-                    <span className="rounded-full bg-[#f3f2ef] px-2.5 py-1 text-[10.5px] font-medium text-[#8a867f]">
-                      {taskTypeLabels[task.task_type] ?? task.task_type}
-                    </span>
-                  )}
-
-                  <span className="rounded-full bg-[#f3f2ef] px-2.5 py-1 text-[10.5px] font-medium text-[var(--muted)]">
-                    Due {formatShortDate(task.due_date)}
-                  </span>
-
-                  <span className="rounded-full bg-[#f3f2ef] px-2.5 py-1 text-[10.5px] font-medium text-[var(--muted)]">
-                    {task.estimated_minutes}m
-                  </span>
-                </div>
-
-                {task.notes && (
-                  <p className="mt-2 line-clamp-2 text-sm text-[var(--muted)]">
-                    {task.notes}
+            <div>
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <h2 className="text-2xl">Archive</h2>
+                  <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
+                    Review archived items and restore anything you want back in your workspace.
+                    For now, this section supports archived tasks.
                   </p>
-                )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => void loadArchivedTasks()}
+                  className="w-fit rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--text)]"
+                >
+                  Refresh
+                </button>
               </div>
 
-              <div className="flex shrink-0 flex-wrap items-center gap-2">
-              <span
-                className={`rounded-lg px-3 py-2 text-xs font-medium ${
-                  isCheckingGoogleConnection
-                    ? 'bg-[#f3f1ef] text-[var(--muted)]'
-                    : googleConnected
-                      ? 'bg-[#e8f2ea] text-[#4f7457]'
-                      : 'bg-[rgba(201,136,142,0.12)] text-[#a85c64]'
-                }`}
-              >
-                {isCheckingGoogleConnection
-                  ? 'Checking...'
-                  : googleConnected
-                    ? 'Connected'
-                    : 'Disconnected'}
-              </span>
-            
-              <button
-                type="button"
-                onClick={() => {
-                  if (googleConnected) {
-                    void disconnectGoogleCalendar()
-                  } else {
-                    void connectGoogleCalendar()
-                  }
-                }}
-                className="rounded-lg bg-[var(--jamie)] px-3 py-2 text-xs font-semibold text-white"
-              >
-                {googleConnected ? 'Disconnect' : 'Connect'}
-              </button>
-            </div>
-              
-            </article>
-          ))}
-        </div>
-      )}
-    </div>
-  </div>
-)}
+              <div className="mt-6 rounded-xl border border-[var(--border)] bg-white">
+                <header className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
+                  <div>
+                    <h3 className="font-semibold">Archived Tasks</h3>
+                    <p className="mt-1 text-xs text-[var(--muted)]">
+                      {archivedTasks.length} archived task{archivedTasks.length === 1 ? '' : 's'}
+                    </p>
+                  </div>
+                </header>
 
-          
-          
+                {archivedTasks.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <p className="font-serif text-xl text-[var(--text)]">No archived tasks</p>
+                    <p className="mt-2 text-sm text-[var(--muted)]">
+                      Tasks you archive will appear here so you can restore them later.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-[var(--border)]">
+                    {archivedTasks.map((task) => (
+                      <article
+                        key={task.id}
+                        className="flex flex-col gap-3 px-5 py-4 md:flex-row md:items-center md:justify-between"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="truncate font-semibold text-[var(--text)]">
+                              {task.title}
+                            </h4>
+
+                            {task.starred && (
+                              <span className="text-[#f0c040]">★</span>
+                            )}
+                          </div>
+
+                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            <span className="rounded-full bg-[rgba(193,152,173,0.16)] px-2.5 py-1 text-[10.5px] font-medium text-[#9f6e89]">
+                              {statusLabel(task.status)}
+                            </span>
+
+                            {task.task_type && (
+                              <span className="rounded-full bg-[#f3f2ef] px-2.5 py-1 text-[10.5px] font-medium text-[#8a867f]">
+                                {taskTypeLabels[task.task_type] ?? task.task_type}
+                              </span>
+                            )}
+
+                            <span className="rounded-full bg-[#f3f2ef] px-2.5 py-1 text-[10.5px] font-medium text-[var(--muted)]">
+                              Due {formatShortDate(task.due_date)}
+                            </span>
+
+                            <span className="rounded-full bg-[#f3f2ef] px-2.5 py-1 text-[10.5px] font-medium text-[var(--muted)]">
+                              {task.estimated_minutes}m
+                            </span>
+                          </div>
+
+                          {task.notes && (
+                            <p className="mt-2 line-clamp-2 text-sm text-[var(--muted)]">
+                              {task.notes}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => void handleRestoreTask(task)}
+                            className="rounded-lg bg-[var(--tasks)] px-3 py-2 text-xs font-semibold text-white"
+                          >
+                            Restore
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteTask(task)}
+                            className="rounded-lg border border-[rgba(201,136,142,0.35)] bg-white px-3 py-2 text-xs font-semibold text-[#a85c64]"
+                          >
+                            Delete permanently
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {activeSection === 'integrations' && (
             <div>
               <h2 className="text-2xl">Integrations</h2>
@@ -526,61 +538,83 @@ const handleDeleteTask = async (task: Task) => {
 
               <div className="mt-6 space-y-4">
                 <article className="rounded-xl border border-[var(--border)] bg-white p-5">
-  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-    <div className="flex gap-4">
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--meeting)] text-sm font-semibold text-white">
-        G
-      </div>
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div className="flex gap-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--meeting)] text-sm font-semibold text-white">
+                        G
+                      </div>
 
-      <div>
-        <h3 className="font-semibold">Google Calendar</h3>
-        <p className="mt-1 max-w-2xl text-sm text-[var(--muted)]">
-          Authorize SpoonFlow to read your Google Calendar so Today and Calendar can pull in meetings,
-          medical appointments, and prep blocks.
-        </p>
+                      <div>
+                        <h3 className="font-semibold">Google Calendar</h3>
+                        <p className="mt-1 max-w-2xl text-sm text-[var(--muted)]">
+                          Authorize SpoonFlow to read your Google Calendar so Today and Calendar can pull in meetings,
+                          medical appointments, and prep blocks.
+                        </p>
 
-        <div className="mt-4 rounded-lg bg-[#f3f1ef] px-3 py-3 text-xs text-[var(--muted)]">
-          Vercel URL to add in Supabase redirect settings:{' '}
-          <span className="font-semibold text-[var(--text)]">
-            {window.location.origin}/settings/integrations
-          </span>
-        </div>
-      </div>
-    </div>
+                        <div className="mt-4 rounded-lg bg-[#f3f1ef] px-3 py-3 text-xs text-[var(--muted)]">
+                          Vercel URL to add in Supabase redirect settings:{' '}
+                          <span className="font-semibold text-[var(--text)]">
+                            {window.location.origin}/settings/integrations
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
-    <div className="flex shrink-0 flex-wrap items-center gap-2">
-      <span
-        className={`rounded-lg px-3 py-2 text-xs font-medium ${
-          isCheckingGoogleConnection
-            ? 'bg-[#f3f1ef] text-[var(--muted)]'
-            : googleConnected
-              ? 'bg-[#e8f2ea] text-[#4f7457]'
-              : 'bg-[rgba(201,136,142,0.12)] text-[#a85c64]'
-        }`}
-      >
-        {isCheckingGoogleConnection
-          ? 'Checking...'
-          : googleConnected
-            ? 'Connected'
-            : 'Disconnected'}
-      </span>
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      <span
+                        className={`rounded-lg px-3 py-2 text-xs font-medium ${
+                          isCheckingGoogleConnection
+                            ? 'bg-[#f3f1ef] text-[var(--muted)]'
+                            : googleConnected
+                              ? 'bg-[#e8f2ea] text-[#4f7457]'
+                              : 'bg-[rgba(201,136,142,0.12)] text-[#a85c64]'
+                        }`}
+                      >
+                        {isCheckingGoogleConnection
+                          ? 'Checking...'
+                          : googleConnected
+                            ? 'Connected'
+                            : 'Disconnected'}
+                      </span>
 
-      <button
-        type="button"
-        onClick={() => {
-          if (googleConnected) {
-            void disconnectGoogleCalendar()
-          } else {
-            void connectGoogleCalendar()
-          }
-        }}
-        className="rounded-lg bg-[var(--jamie)] px-3 py-2 text-xs font-semibold text-white"
-      >
-        {googleConnected ? 'Disconnect' : 'Connect'}
-      </button>
-    </div>
-  </div>
-</article>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (googleConnected) {
+                            void disconnectGoogleCalendar()
+                          } else {
+                            void connectGoogleCalendar()
+                          }
+                        }}
+                        className="rounded-lg bg-[var(--jamie)] px-3 py-2 text-xs font-semibold text-white"
+                      >
+                        {googleConnected ? 'Disconnect' : 'Connect'}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+
+                <article className="rounded-xl border border-[var(--border)] bg-white p-5">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div className="flex gap-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--nurture)] text-sm font-semibold text-white">
+                        S
+                      </div>
+
+                      <div>
+                        <h3 className="font-semibold">Supabase</h3>
+                        <p className="mt-1 max-w-2xl text-sm text-[var(--muted)]">
+                          Stores contacts, tasks, content items, goals, Jamie conversations, app settings, and imported
+                          Fathom meeting transcripts.
+                        </p>
+                      </div>
+                    </div>
+
+                    <span className="w-fit rounded-lg bg-[#e8f2ea] px-3 py-2 text-xs font-medium text-[#4f7457]">
+                      Connected
+                    </span>
+                  </div>
+                </article>
 
                 <article className="rounded-xl border border-[var(--border)] bg-white p-5">
                   <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -632,6 +666,7 @@ const handleDeleteTask = async (task: Task) => {
                           <label className="mt-4 block text-xs font-medium text-[var(--muted)]">
                             Fathom workspace or login URL
                           </label>
+
                           <input
                             value={fathomWorkspaceUrl}
                             onChange={(event) => setFathomWorkspaceUrl(event.target.value)}
@@ -641,7 +676,9 @@ const handleDeleteTask = async (task: Task) => {
 
                           <div className="mt-4 rounded-lg bg-[#f3f1ef] px-3 py-3 text-xs text-[var(--muted)]">
                             Webhook destination URL:{' '}
-                            <span className="font-semibold text-[var(--text)]">{webhookUrl}</span>
+                            <span className="font-semibold text-[var(--text)]">
+                              {webhookUrl}
+                            </span>
                           </div>
 
                           <div className="mt-4 flex flex-wrap gap-2">
@@ -764,3 +801,4 @@ const handleDeleteTask = async (task: Task) => {
     </section>
   )
 }
+```
