@@ -4,6 +4,8 @@ import { ListView } from '../components/calendar/ListView'
 import { MonthGrid } from '../components/calendar/MonthGrid'
 import type { CalendarItem } from '../components/calendar/EventPill'
 import { useGoogleCalendar } from '../hooks/useGoogleCalendar'
+import { useTasks } from '../hooks/useTasks'
+import { useContacts } from '../hooks/useContacts'
 
 function localDateKey(date: Date) {
   const year = date.getFullYear()
@@ -17,13 +19,27 @@ function eventDateKey(iso: string) {
   return localDateKey(new Date(iso))
 }
 
+function dateKeyFromDateValue(value?: string | null) {
+  if (!value) return null
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+
+  return localDateKey(date)
+}
+
 function addMonths(date: Date, delta: number) {
   return new Date(date.getFullYear(), date.getMonth() + delta, 1)
 }
 
 export function CalendarPage() {
   const { enrichedCalendarEvents, isLoading, syncCalendar } = useGoogleCalendar()
+  const { tasks } = useTasks()
+  const { contacts } = useContacts()
+  
   const [view, setView] = useState<'month' | 'list'>('month')
+  const [weekView, setWeekView] = useState<'workweek' | 'fullweek'>('workweek')
   const [currentMonth, setCurrentMonth] = useState(() => new Date())
   const [selectedDateKey, setSelectedDateKey] = useState(() => localDateKey(new Date()))
 
@@ -47,11 +63,38 @@ export function CalendarPage() {
     () => events.filter((event) => eventDateKey(event.startTime) === selectedDateKey),
     [events, selectedDateKey],
   )
+  const taskCountsByDate = useMemo(() => {
+  return tasks.reduce<Record<string, number>>((acc, task) => {
+    if (task.archived || task.status === 'done') return acc
 
-  const monthLabel = currentMonth.toLocaleDateString([], {
-  month: 'long',
-  year: 'numeric',
-})
+    const key = dateKeyFromDateValue(task.due_date)
+    if (!key) return acc
+
+    acc[key] = (acc[key] ?? 0) + 1
+    return acc
+  }, {})
+}, [tasks])
+
+    const nurtureCountsByDate = useMemo(() => {
+      return contacts.reduce<Record<string, number>>((acc, contact) => {
+        if (!contact.nurture_frequency_days) return acc
+    
+        const key = dateKeyFromDateValue(contact.next_nurture_date)
+        if (!key) return acc
+    
+        acc[key] = (acc[key] ?? 0) + 1
+        return acc
+      }, {})
+    }, [contacts])
+    
+    const contentCountsByDate = useMemo<Record<string, number>>(() => {
+      return {}
+    }, [])
+    
+      const monthLabel = currentMonth.toLocaleDateString([], {
+      month: 'long',
+      year: 'numeric',
+    })
 
   return (
   <section className="overflow-hidden rounded-xl border-[0.5px] border-[var(--border)] bg-white">
@@ -104,35 +147,65 @@ export function CalendarPage() {
           </button>
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-white p-1">
-          <button
-            type="button"
-            className={`rounded-md px-4 py-2 text-sm ${
-              view === 'month'
-                ? 'bg-[var(--bg)] text-[var(--text)]'
-                : 'text-[var(--muted)] hover:bg-black/[0.03]'
-            }`}
-            onClick={() => setView('month')}
-          >
-            Month
-          </button>
+        <div className="flex items-center gap-2">
+  {view === 'month' && (
+    <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-white p-1">
+      <button
+        type="button"
+        className={`rounded-md px-3 py-2 text-sm ${
+          weekView === 'workweek'
+            ? 'bg-[var(--bg)] text-[var(--text)]'
+            : 'text-[var(--muted)] hover:bg-black/[0.03]'
+        }`}
+        onClick={() => setWeekView('workweek')}
+      >
+        M–F
+      </button>
 
-          <button
-            type="button"
-            className={`rounded-md px-4 py-2 text-sm ${
-              view === 'list'
-                ? 'bg-[var(--bg)] text-[var(--text)]'
-                : 'text-[var(--muted)] hover:bg-black/[0.03]'
-            }`}
-            onClick={() => setView('list')}
-          >
-            List
-          </button>
-        </div>
+      <button
+        type="button"
+        className={`rounded-md px-3 py-2 text-sm ${
+          weekView === 'fullweek'
+            ? 'bg-[var(--bg)] text-[var(--text)]'
+            : 'text-[var(--muted)] hover:bg-black/[0.03]'
+        }`}
+        onClick={() => setWeekView('fullweek')}
+      >
+        S–S
+      </button>
+    </div>
+  )}
+
+  <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-white p-1">
+    <button
+      type="button"
+      className={`rounded-md px-4 py-2 text-sm ${
+        view === 'month'
+          ? 'bg-[var(--bg)] text-[var(--text)]'
+          : 'text-[var(--muted)] hover:bg-black/[0.03]'
+      }`}
+      onClick={() => setView('month')}
+    >
+      Month
+    </button>
+
+    <button
+      type="button"
+      className={`rounded-md px-4 py-2 text-sm ${
+        view === 'list'
+          ? 'bg-[var(--bg)] text-[var(--text)]'
+          : 'text-[var(--muted)] hover:bg-black/[0.03]'
+      }`}
+      onClick={() => setView('list')}
+    >
+      List
+    </button>
+  </div>
+</div>
       </div>
     </header>
 
-    <div className="bg-[var(--bg)] p-4">
+    <div className="bg-[var(--bg)] px-5 py-4">
       {isLoading ? (
         <div className="rounded-xl border-[0.5px] border-[var(--border)] bg-white p-5 text-sm text-[var(--muted)]">
           Loading calendar...
@@ -141,12 +214,16 @@ export function CalendarPage() {
         <ListView events={events} />
       ) : (
         <div className="flex flex-col gap-4 lg:flex-row">
-          <div className="flex-1 rounded-xl border-[0.5px] border-[var(--border)] bg-white p-4">
+          <div className="flex-1">
             <MonthGrid
               currentMonth={currentMonth}
               events={events}
               selectedDateKey={selectedDateKey}
               onSelectDate={setSelectedDateKey}
+              weekView={weekView}
+              taskCountsByDate={taskCountsByDate}
+              contentCountsByDate={contentCountsByDate}
+              nurtureCountsByDate={nurtureCountsByDate}
             />
           </div>
 
