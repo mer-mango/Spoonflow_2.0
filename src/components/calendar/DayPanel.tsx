@@ -151,11 +151,18 @@ export function DayPanel({
                     : null
 
                   return (
-                    <article
-                      key={`${event.id}-${event.startTime}`}
-                      className="rounded-xl border border-[var(--border)] bg-white p-3"
-                      style={{ borderLeft: `4px solid ${color}` }}
-                    >
+                   <article
+                    key={`${event.id}-${event.startTime}`}
+                    onClick={() => {
+                      if (event.contactId) {
+                        onOpenContactInteractions(event.contactId)
+                      }
+                    }}
+                    className={`rounded-xl border border-[var(--border)] bg-white p-3 ${
+                      event.contactId ? 'cursor-pointer transition hover:bg-[#f8fbfd]' : ''
+                    }`}
+                    style={{ borderLeft: `4px solid ${color}` }}
+                  >
                       <div className="flex items-start gap-3">
                         <div
                           className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
@@ -173,6 +180,7 @@ export function DayPanel({
                                 href={event.meetingLink}
                                 target="_blank"
                                 rel="noreferrer"
+                                onClick={(event) => event.stopPropagation()}
                                 className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#f5f3f0] text-[var(--muted)] transition hover:bg-[#ece8e2] hover:text-[var(--text)]"
                                 title="Open meeting link"
                                 aria-label="Open meeting link"
@@ -190,7 +198,10 @@ export function DayPanel({
                           {event.contactId && contactName && (
                             <button
                               type="button"
-                              onClick={() => onOpenContactInteractions(event.contactId!)}
+                              onClick={(clickEvent) => {
+                              clickEvent.stopPropagation()
+                              onOpenContactInteractions(event.contactId!)
+                            }}
                               className="mt-2 inline-flex items-center rounded-full bg-[rgba(139,165,168,0.16)] px-2 py-0.5 text-[10px] font-medium text-[#6f8f92] transition hover:bg-[rgba(139,165,168,0.24)] hover:text-[#54777a]"
                               title="Open contact interactions"
                             >
@@ -264,9 +275,6 @@ export function DayPanel({
                     className="cursor-pointer rounded-xl border border-[var(--border)] bg-white p-3 transition hover:bg-[#f8fdf8]"
                     style={{ borderLeft: '4px solid #8fa790' }}
                   >
-                    <p className="text-xs text-[var(--muted)]">
-                      Nurture follow-up due
-                    </p>
 
                     <button
                       type="button"
