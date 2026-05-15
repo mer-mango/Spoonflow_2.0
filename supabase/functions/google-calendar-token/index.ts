@@ -16,6 +16,12 @@ type RequestBody =
   | {
       action: 'get_access_token'
     }
+  | {
+      action: 'get_connection_status'
+    }
+  | {
+      action: 'disconnect_google_calendar'
+    }
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -108,6 +114,37 @@ Deno.serve(async (req) => {
       return json({ stored: true })
     }
 
+    if (body.action === 'get_connection_status') {
+  const { data: tokenRow, error } = await adminClient
+    .from('google_oauth_tokens')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (error) {
+    return json({ error: error.message }, 500)
+  }
+
+  return json({
+    connected: Boolean(tokenRow?.user_id),
+  })
+}
+
+    if (body.action === 'disconnect_google_calendar') {
+  const { error } = await adminClient
+    .from('google_oauth_tokens')
+    .delete()
+    .eq('user_id', user.id)
+
+  if (error) {
+    return json({ error: error.message }, 500)
+  }
+
+  return json({
+    disconnected: true,
+  })
+}
+    
     if (body.action === 'get_access_token') {
       if (!googleClientId || !googleClientSecret) {
         return json(
